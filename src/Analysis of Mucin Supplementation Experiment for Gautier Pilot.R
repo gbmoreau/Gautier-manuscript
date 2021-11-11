@@ -1,0 +1,429 @@
+#### ANALYSIS OF MUCIN SUPPLEMENTATION EXPERIMENT FOR GAUTIER PILOT #################################
+# NAME: G. Brett Moreau
+# DATE: November 11, 2021
+
+#### PACKAGES ######################################################################################
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#  install.packages("BiocManager")
+#BiocManager::install()
+packageVersion("BiocManager") # I'm using version 1.30.16
+
+#BiocManager::install("phyloseq")
+library(phyloseq)
+packageVersion("phyloseq") # I'm using version 1.38.0
+
+#install.packages("tidyverse")
+library(tidyverse)
+packageVersion("tidyverse") # I'm using version 1.3.1
+
+#install.packages("ggplot2")
+library(ggplot2)
+packageVersion("ggplot2") # I'm using version 3.3.5
+
+#BiocManager::install("microbiome")
+library(microbiome) 
+packageVersion("microbiome") # I'm using version 1.16.0
+
+#install.packages("vegan")
+library(vegan)
+packageVersion("vegan") # I'm using version 2.5.7
+
+
+#### INTRODUCTION ##################################################################################
+# The Gautier TUMI pilot project is focused on investigating changes in the intestinal microbiome 
+# of mice with depressive phenotypes as well as the impact of mucin degradation on this process.
+# Samples were previously run, but the resulting fastq files had generally poor quality and resulted
+# in significant loss of reads throughout the pipeline. Other samples run around the same time also
+# had issues, so we thought this may be a Miseq issue and decided to re-run the samples on the TUMI 
+# MiSeq. The sample library was re-diluted and re-run on the TUMI MiSeq, and these .fastq files will
+# now be run through the DADA2 pipeline.
+
+
+
+
+#### LOAD PHYLOSEQ OBJECT ##########################################################################
+# I'll start by loading the initial phyloseq object generated after the DADA2 pipeline. This will be 
+# used for analysis.
+
+#setwd("..") # I need to set the working directory up one to the parent directory for the code to 
+# work properly. If this has been done previously during the same session then this step should be 
+# skipped, or the working directory will be moved out of the parent directory.
+
+load(file = "./results/phyloseq objects by experiment.RData")
+
+# For this analysis, I'll be focusing on the Mucin Supplementation mice experiment (ps.mucin), so I'll
+# remove other objects from the environment.
+
+rm(ps.stress)
+
+# We're now ready to start analysis of the data.
+
+
+
+
+#### CHARACTERIZATION OF THE DATA SET ##############################################################
+# Before I move on, I'll first characterize the data set as a whole
+
+View(ps.mucin@sam_data)
+
+# Overall, there are 71 samples in this experiment. Samples were divided into two groups (Control and 
+# Mucin-supplemented) and three different timepoints (pre-stress, 3 weeks post-stress, and 4 weeks
+# post-stress) There are 12 mice for each group/timepoint, but Sample #167 was removed due to low read
+# counts, giving our 71 samples.
+
+dim(ps.mucin@otu_table) # From these 71 samples, there were 1795 unique ASVs.
+
+total.reads <- sample_sums(ps.mucin)
+
+sum(total.reads) # There are a total of 4,784,563 reads across the 71 samples in the data set.
+mean(total.reads) # The average read number is 67,388
+median(total.reads) # The median read number is 66,966
+range(total.reads) # The range of reads in samples is from 39,993-101,514 total reads.
+
+
+# Before I perform downstream analyses, I'll first convert the data into relative abundances and
+# order the sample groups.
+
+ps.mucin@sam_data$Condition <- factor(ps.mucin@sam_data$Condition, levels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"))
+ps.mucin.prop <- transform_sample_counts(ps.mucin, function(ASV) ASV/sum(ASV)) 
+
+
+
+
+#### ALPHA DIVERSITY #############################################################################
+# I'll first look at alpha diversity. The DADA2 pipeline removes singlets (sequences detected only
+# once) and doublets (sequences detected twice) from the data set, as it does not have enough 
+# confidence to determine whether these sequences are real or artifacts. Because of this, measures
+# of richness (how many ASVs are present in a sample) fail explicitly. I'll focus mainly on 
+# measures of evenness but give measures of richness a glance to see if there are any major 
+# differences.
+
+### RICHNESS ###
+# I'll look at the number of Observed ASVs as my measure of richness.
+
+plot_richness(ps.mucin, x = "Condition", measures = c("Observed"), 
+              color = "Condition") + 
+  geom_point() +
+  geom_boxplot() + 
+  theme_bw() +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_blank()) +
+  scale_color_discrete(name = "Condition", 
+                       breaks = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"), 
+                       labels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk")) 
+
+
+ggsave("./results/figures/mucin/Mucin Experiment_richness_observed.png", width = 5, height = 4)
+
+# There don't appear to be any large changes in richness between groups. I'll perform a paired Wilcoxon test
+# to confirm.
+
+richness <- estimate_richness(ps.mucin)
+pairwise.wilcox.test(richness$Observed, p.adjust.method = "bonferroni", sample_data(ps.mucin)$Condition)
+
+# There are no significant differences between any of the groups looking at Observed ASVs.
+
+
+# I'll focus more on evenness, which are more robust to noise from rare sequence varients and 
+# can be interpreted using this pipeline. I'll use Pielou's Evenness as my evenness measure.
+
+# First I'll organize the data.
+sample.data.mucin <- ps.mucin@sam_data
+sample.data.mucin <- cbind("Sample.Names" = rownames(sample.data.mucin), sample.data.mucin)
+
+evenness<- evenness(ps.mucin, index = c("pielou"))
+evenness<- cbind("Sample.Names" = rownames(evenness), evenness)
+
+sample.data.mucin <- full_join(sample.data.mucin, evenness, by = "Sample.Names")
+
+
+### PIELOU ###
+ggplot(sample.data.mucin, aes(x = Condition, y = pielou, color = Condition)) +
+  geom_point() +
+  geom_boxplot() +
+  theme_bw() +
+  theme(legend.position = "none")
+
+ggsave("./results/figures/mucin/Mucin Experiment_evenness_pielou.png", width = 5, height = 4)
+
+# Overall, there doesn't appear to be a whole lot of separation in evenness between groups, 
+# although there is a good amount of spread in the data. It does appear that evenness trends
+# upwards around 4 weeks in both the Control and Mucin-supplemented group. Now I'll look 
+# for statistical differences.
+
+
+pairwise.wilcox.test(evenness$pielou, p.adjust.method = "bonferroni", sample_data(ps.mucin)$Condition)
+
+# Significant differences are mainly between 4 week samples and all other samples. The 
+# Control sample sat 4 weeks are significantly different from Control pre-treatment (p=0.017) 
+# and Control at 3 weeks (p=0.002). The Mucin samples at 4 weeks trend higher than Mucin
+# pre-treatment (p=0.067).
+
+# Overall, this suggests that samples at 4 weeks show more evenness than those pre-stress
+# or after 3 weeks stress.
+
+
+
+
+#### BETA DIVERSITY: BRAY-CURTIS DISSIMILARITY  #####################################################
+# I'll now move on to measures of beta diversity, which investigates variation between samples.
+# I'll start by looking at Bray-Curtis Dissimilarity.
+
+#sample(1:1000, 1) # It selected 966
+set.seed(966) # Set seed for reproducibility
+
+# First, let's ordinate Bray-Curtis Dissimilarity using NMDS, then plot this ordination to visualize
+# separation between different samples.
+
+ord.nmds.bray <- ordinate(ps.mucin.prop, method = "NMDS", distance = "bray")
+
+plot_ordination(ps.mucin.prop, ord.nmds.bray, color = "Condition", 
+                title = "Bray-Curtis Dissimilarity") +
+  theme_bw() +
+  scale_color_discrete(name = "Condition", 
+                       breaks = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"), 
+                       labels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk")) +
+  theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
+
+ggsave("./results/figures/mucin/Mucin Experiment_beta_diversity_bc.png", width = 6, height = 6)
+
+
+# Bray-Curtis distance is ordinated using Non-metric multidimensional scaling (NMDS). Based on the
+# plot, it echos the results of our evenness measure, which found differences between 4 week samples
+# and all other samples. In addition, it looks like there's a lot of overlap between control and Mucin
+# samples pre-stress and at 3 weeks, while Control and Mucin groups appear to separate from each other 
+# at 4 weeks.
+
+# I'll perform a PERMANOVA to look statistically if there are any differences in clustering between groups.
+
+adonis(distance(ps.mucin.prop, method = "bray") ~sample_data(ps.mucin.prop)$Condition)
+
+# The PERMANOVA found significant differences in clustering (p = 0.001), but this doesn't specifiy
+# which groups are significantly different from each other. To test this, I'll perform pairwise
+# PERMANOVAs with multiple comparisons correction.
+
+permanova.combinations <- combn(x = levels(ps.mucin.prop@sam_data$Condition), m = 2)
+permanova.p.bray <- vector(length = 6)
+for(i in 1:ncol(permanova.combinations)){
+  ps.subs.bray <- subset_samples(ps.mucin.prop, Condition %in% permanova.combinations[,i])
+  metadata.subs.bray <- as(sample_data(ps.subs.bray), "data.frame")
+  pairwise.bray <- adonis(distance(ps.subs.bray, method = "bray") ~ Condition, data = metadata.subs.bray)
+  permanova.p.bray[i] <- pairwise.bray$aov.tab[1,ncol(pairwise.bray$aov.tab)]
+}
+combinations <- c("Control Pre/Mucin Pre", "Control Pre/Control 3wk", "Control Pre/Mucin 3wk ", "Control Pre/Control 4wk", "Control Pre/Mucin 4wk", 
+                  "Mucin Pre/Control 3wk", "Mucin Pre/Mucin 3wk ", "Mucin Pre/Control 4wk", "Mucin Pre/Mucin 4wk",
+                  "Control 3wk/Mucin 3wk ", "Control 3wk/Control 4wk", "Control 3wk/Mucin 4wk",
+                  "Mucin 3wk /Control 4wk", "Mucin 3wk /Mucin 4wk",
+                  "Control 4wk/Mucin 4wk")
+
+permanova.FDR.bray <- p.adjust(permanova.p.bray, method = "bonferroni")
+permanova.bray.table <- cbind(combinations, permanova.p.bray)
+permanova.bray.table <- cbind(permanova.bray.table, permanova.FDR.bray)
+?p.adjust
+View(permanova.bray.table)
+
+# According to the pairwise comparisons of the PERMANOVA, all groups are significantly different
+# from each other except for Control and Mucin groups pre-stress and Control and Mucin groups at 
+# 3 weeks. This is consistent with intial impressions of the plot when looking by eye.
+
+
+
+
+#### BETA DIVERSITY: UNWEIGHTED UNIFRAC #############################################################
+# I'll also look at unweighted Unifrac, another measure of beta diversity. While Bray-Curtis 
+# dissimilarity looks only at counts between samples, Unifrac looks at both counts and differences in 
+# phylogeny between samples, so we'll need to add some taxonomic information.
+
+random_tree <- ape::rtree(ntaxa(ps.mucin.prop), rooted = TRUE, tip.label = taxa_names(ps.mucin.prop))
+samples.out <- rownames(seqtab.nochim)
+ps.mucin.prop <- merge_phyloseq(ps.mucin.prop, samples.out, random_tree)
+
+unifrac_dist <- phyloseq::distance(ps.mucin.prop, method = "unifrac", weighted = FALSE)
+ordination <- ordinate(ps.mucin.prop, method = "PCoA", distance = unifrac_dist)
+
+plot_ordination(ps.mucin.prop, ordination, color = "Condition") + 
+  theme_bw() +
+  scale_color_discrete(name = "Condition", 
+                       breaks = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"), 
+                       labels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk")) +
+  labs(title = "Unweighted Unifrac Distance") +
+  theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
+
+ggsave("./results/figures/Mucin Experiment_beta_diversity_unifrac.png", width = 6, height = 6)
+
+
+# Unweighted Unifrac distance is ordinated using Principal Coordinate Analysis (PCoA). The trends
+# here are similar: 4 week samples are separated from other samples. Control and Mucin groups do
+# not appear different from each other pre-stress or after 3 weeks. 
+
+
+
+
+### COMMUNITY COMPOSITION: PHYLUM LEVEL #############################################################
+# There appear to be some broad differences in diversity between groups. I'll now see if this is
+# reflected by any broad changes in community composition across groups. I'll start by looking at
+# the phylum level, looking at all phyla that make up at least 1% of the relative abundance in at
+# least one group.
+
+ps.mucin.prop.phylum <- tax_glom(ps.mucin.prop, "Phylum", NArm = FALSE)
+phylum.table <- psmelt(ps.mucin.prop.phylum) # Organize in long format for ggplot.
+
+table(ps.mucin@sam_data$Condition) # There are 12 samples for all groups except Mucin 4wk, which had
+# one sample excluded. I'll separate this group from the others, then generate relative abundance as
+# a percentage by dividing by the total number of samples in each group.
+
+phylum.table.mucin4wk <- filter(phylum.table, Condition == "Mucin 4wk")
+phylum.table.mucin4wk$Relative.Abundance <- NA
+phylum.table.mucin4wk$Relative.Abundance <- phylum.table.mucin4wk$Abundance / 11 *100
+
+
+phylum.table.other <- filter(phylum.table, Condition != "Mucin 4wk")
+phylum.table.other$Relative.Abundance <- NA
+phylum.table.other$Relative.Abundance <- phylum.table.other$Abundance / 12 *100
+
+
+phylum.table.mucin <- rbind(phylum.table.other, phylum.table.mucin4wk)
+phylum.table.mucin <- as.data.frame(phylum.table.mucin)
+
+# I'll plot the data to get an overview of differences between groups.
+ggplot(phylum.table.mucin, aes(x = Condition, y = Relative.Abundance, fill = Phylum)) +
+  geom_bar(stat = "identity") 
+
+# This figure is pretty cluttered. To clean it up, I'll filter out all Families that make up less than 1
+# % of total in any group and place them in their own category.
+
+
+# First, I'll summarize relative abundance information per taxonomic group.
+summarized.abundance.phylum <- phylum.table.mucin %>%
+  group_by(Phylum, Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Relative.Abundance)))
+
+summarized.abundance.phylum$Phylum <- as.character(replace_na(summarized.abundance.phylum$Phylum, replace = "Unidentified"))
+
+# Now, I'll collect taxa names for taxa with relative abundance above 1% in any group. These
+# names will be preserved in each group.
+summarized.abundance.phylum.above1 <- filter(summarized.abundance.phylum, Total.Relative.Abundance >= 1.0)
+summarized.abundance.phylum.above1$Phylum <- factor(summarized.abundance.phylum.above1$Phylum, 
+                                                    levels = sort(unique(summarized.abundance.phylum.above1$Phylum)))
+abundant.families <- as.character(unique(summarized.abundance.phylum.above1$Phylum)) 
+table(abundant.families) # There are 3 Phyla that have a Total Relative Abundance above 1%
+
+# Make new data frames either including or excluding abundant families.
+summarized.abundance.phylum.no.remainder <- filter(summarized.abundance.phylum, 
+                                                   Phylum %in% abundant.families)
+
+# I'll now summarize the remainder samples that compose less than 1% of relative abundance per group.
+summarized.abundance.phylum.remainders.only <- anti_join(summarized.abundance.phylum, summarized.abundance.phylum.no.remainder, by = "Phylum")
+
+summarized.abundance.phylum.remainders.only.summary <- summarized.abundance.phylum.remainders.only %>%
+  group_by(Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Total.Relative.Abundance))) %>%
+  mutate(Phylum = "Phyla < 1%", .before = 1)
+
+
+# Now I'll combine abundant families with the low abundance remainders to account for 100% of total 
+# abundance. This data frame will be used to generate the community composition figure.
+
+summarized.abundance.phylum.figure <- rbind(summarized.abundance.phylum.no.remainder, summarized.abundance.phylum.remainders.only.summary)
+summarized.abundance.phylum.figure$Phylum <- factor(summarized.abundance.phylum.figure$Phylum, levels = c("Bacteroidota", "Firmicutes", "Verrucomicrobiota", "Phylum < 1%"))
+                                                                                                          
+ggplot(summarized.abundance.phylum.figure, aes(x = Condition, y = Total.Relative.Abundance, fill = Phylum)) +
+  geom_bar(stat = "identity") +
+  theme_bw()
+
+
+ggsave("./results/figures/mucin/Mucin Experiment_community_composition_phylum.png", width = 6, height = 4)
+
+
+
+write.csv(summarized.abundance.phylum.figure, file = "composition sample 2.csv")
+
+
+
+
+
+
+
+### COMMUNITY COMPOSITION: FAMILY LEVEL #############################################################
+# There appear to be some broad differences in diversity between groups. I'll now see if this is
+# reflected by any broad changes in community composition across groups. I'll start by looking at
+# the phylum level, looking at all phyla that make up at least 1% of the relative abundance in at
+# least one group.
+
+ps.mucin.prop.family <- tax_glom(ps.mucin.prop, "Family", NArm = FALSE)
+family.table <- psmelt(ps.mucin.prop.family) # Organize in long format for ggplot.
+
+table(ps.mucin@sam_data$Condition) # There are 12 samples for all groups except Mucin 4wk, which had
+# one sample excluded. I'll separate this group from the others, then generate relative abundance as
+# a percentage by dividing by the total number of samples in each group.
+
+family.table.mucin4wk <- filter(family.table, Condition == "Mucin 4wk")
+family.table.mucin4wk$Relative.Abundance <- NA
+family.table.mucin4wk$Relative.Abundance <- family.table.mucin4wk$Abundance / 11 *100
+
+
+family.table.other <- filter(family.table, Condition != "Mucin 4wk")
+family.table.other$Relative.Abundance <- NA
+family.table.other$Relative.Abundance <- family.table.other$Abundance / 12 *100
+
+
+family.table.mucin <- rbind(family.table.other, family.table.mucin4wk)
+family.table.mucin <- as.data.frame(family.table.mucin)
+
+# I'll plot the data to get an overview of differences between groups.
+ggplot(family.table.mucin, aes(x = Condition, y = Relative.Abundance, fill = Family)) +
+  geom_bar(stat = "identity") 
+
+# This figure is pretty cluttered. To clean it up, I'll filter out all Families that make up less than 1
+# % of total in any group and place them in their own category.
+
+
+# First, I'll summarize relative abundance information per taxonomic group.
+summarized.abundance.family <- family.table.mucin %>%
+  group_by(Family, Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Relative.Abundance)))
+
+summarized.abundance.family$Family <- as.character(replace_na(summarized.abundance.family$Family, replace = "Unidentified"))
+
+# Now, I'll collect taxa names for taxa with relative abundance above 1% in any group. These
+# names will be preserved in each group.
+summarized.abundance.family.above1 <- filter(summarized.abundance.family, Total.Relative.Abundance >= 1.0)
+summarized.abundance.family.above1$Family <- factor(summarized.abundance.family.above1$Family, 
+                                                    levels = sort(unique(summarized.abundance.family.above1$Family)))
+abundant.families <- as.character(unique(summarized.abundance.family.above1$Family)) 
+table(abundant.families) # There are 13 Families (and 1 group of unidentified families) that have a Total Relative 
+# Abundance above 1%
+
+# Make new data frames either including or excluding abundant families.
+summarized.abundance.family.no.remainder <- filter(summarized.abundance.family, 
+                                                   Family %in% abundant.families)
+
+# I'll now summarize the remainder samples that compose less than 1% of relative abundance per group.
+summarized.abundance.family.remainders.only <- anti_join(summarized.abundance.family, summarized.abundance.family.no.remainder, by = "Family")
+
+summarized.abundance.family.remainders.only.summary <- summarized.abundance.family.remainders.only %>%
+  group_by(Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Total.Relative.Abundance))) %>%
+  mutate(Family = "Family < 1%", .before = 1)
+
+
+# Now I'll combine abundant families with the low abundance remainders to account for 100% of total 
+# abundance. This data frame will be used to generate the community composition figure.
+
+summarized.abundance.family.figure <- rbind(summarized.abundance.family.no.remainder, summarized.abundance.family.remainders.only.summary)
+summarized.abundance.family.figure$Family <- factor(summarized.abundance.family.figure$Family, levels = c("[Eubacterium] coprostanoligenes group", "Acholeplasmataceae", "Akkermansiaceae", "Clostridiaceae", "Erysipelotrichaceae", "Lachnospiraceae", 
+                                                                                                          "Lactobacillaceae", "Marinifilaceae", "Muribaculaceae", "Oscillospiraceae", "Peptostreptococcaceae", "Rikenellaceae", "Ruminococcaceae", 
+                                                                                                          "Unidentified", "Family < 1%"))
+
+ggplot(summarized.abundance.family.figure, aes(x = Condition, y = Total.Relative.Abundance, fill = Family)) +
+  geom_bar(stat = "identity") +
+  theme_bw()
+
+
+ggsave("./results/figures/mucin/Mucin Experiment_community_composition_family.png", width = 6, height = 4)
+
+
+
+write.csv(summarized.abundance.family.figure, file = "composition sample 2.csv")
+
+

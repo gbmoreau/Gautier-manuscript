@@ -1,0 +1,33 @@
+"Kingdom","Phylum","Class","Order","Baseline Relative Abundance (%)","3 Wk Stress Relative Abundance (%)","Stress Alone Relative Abundance (%)","Stress + Mucin Relative Abundance (%)"
+"Bacteria","Firmicutes","Bacilli","Acholeplasmatales",0.310706025941334,1.78105936587798,0.14216400091558,0.243107034541491
+"Bacteria","Bacteroidota","Bacteroidia","Bacteroidales",26.6405715073385,34.7135064397802,39.9752707273437,48.5105200683848
+"Bacteria","Proteobacteria","Gammaproteobacteria","Burkholderiales",0.000888391116925681,0.00041795710924145,0,0.0122824013909381
+"Bacteria","Verrucomicrobiota","Chlamydiae","Chlamydiales",0.000124754234158707,0,0,0
+"Bacteria","Cyanobacteria","Cyanobacteriia","Chloroplast",0.00423170495878408,0.0216871611694635,0.00422190354635869,0.00076356497031164
+"Bacteria","Firmicutes","Clostridia","Christensenellales",0.0131830762042356,0.0338631700883557,0.0115116411441149,0.0201558483397158
+"Bacteria","Firmicutes","Clostridia","Clostridia UCG-014",1.18558380769918,1.72026308005106,1.42046785434168,1.2402744883607
+"Bacteria","Firmicutes","Clostridia","Clostridia vadinBB60 group",0.272374199737618,0.760217873756209,0.141319862188925,0.442172379641673
+"Bacteria","Firmicutes","Clostridia","Clostridiales",3.11410017098545,0.10649214479379,0.247002334290719,0.722466179533516
+"Bacteria","Actinobacteriota","Coriobacteriia","Coriobacteriales",0.0279881495269033,0.0636361573748729,0.30756590280519,0.232813187967573
+"Bacteria","Desulfobacterota","Desulfovibrionia","Desulfovibrionales",0.000205669908024417,0,0,0.193854004055429
+"Bacteria","Firmicutes","Bacilli","Erysipelotrichales",4.83885525233376,5.76836095262084,0.686140970509903,0.342083662688548
+"Bacteria","Firmicutes","Clostridia","Lachnospirales",34.5310942697109,35.6315336065827,34.5919439005852,28.529021467421
+"Bacteria","Firmicutes","Bacilli","Lactobacillales",14.496636737709,5.24395097472338,7.06132883739165,4.94082518374252
+"Bacteria","Actinobacteriota","Actinobacteria","Micrococcales",0.00147285214210483,0.00121658798657077,0.000579622781493804,0
+"Bacteria","Firmicutes","Clostridia","Monoglobales",0.1204472431741,0.131250933208285,0.110876505142772,0.201011137758564
+"Bacteria","Firmicutes","Clostridia","Oscillospirales",11.5918854625921,11.2176197056565,11.815773533523,12.6477823219119
+"Bacteria","Firmicutes","Clostridia","Peptococcales",0.117542718813038,0.106181784320914,0.0887868359266496,0.0875102455676598
+"Bacteria","Firmicutes","Clostridia","Peptostreptococcales-Tissierellales",1.54132745456463,0.528136603497458,0.214269235388532,0.255419247852236
+"Bacteria","Firmicutes","Bacilli","RF39",1.18435758048044,2.08431200737333,1.55081465137762,0.885602865539485
+"Bacteria","Firmicutes","Bacilli","Staphylococcales",0.00260933295392054,0.028356486117923,0.115112808731658,0.199905389945211
+"Bacteria","Chloroflexi","Chloroflexia","Thermomicrobiales",0.000196915515367287,0,0,0
+"Bacteria","Verrucomicrobiota","Verrucomicrobiae","Verrucomicrobiales",0.00361672235944851,0.0510378016680937,1.1675552710123,0.0459188210640335
+"Bacteria","Firmicutes","Bacilli","Bacillales",0,0.0030020195404181,0,0
+"Bacteria","Actinobacteriota","Actinobacteria","Corynebacteriales",0,0.000271576774754223,0,0
+"Bacteria","Firmicutes","Bacilli","Exiguobacterales",0,0.000477594017793789,0,0
+"Bacteria","Actinobacteriota","Actinobacteria","Streptosporangiales",0,0.000520954892564174,0,0
+NA,NA,NA,"Unidentified",0,0.00262706101727068,0.000960934976625969,0
+"Bacteria","Actinobacteriota","Actinobacteria","Bifidobacteriales",0,0,0.339842500086083,0.236809145517907
+"Bacteria","Campylobacterota","Campylobacteria","Campylobacterales",0,0,0.000983749566085221,0
+"Bacteria","Firmicutes","Bacilli","Mycoplasmatales",0,0,0.00550641642419114,0.00558274075894083
+"Bacteria","Cyanobacteria","Vampirivibrionia","Gastranaerophilales",0,0,0,0.004118613045738

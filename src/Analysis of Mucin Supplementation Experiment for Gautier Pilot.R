@@ -68,8 +68,9 @@ View(ps.mucin@sam_data)
 
 # Overall, there are 71 samples in this experiment. Samples were divided into two groups (Control and 
 # Mucin-supplemented) and three different timepoints (pre-stress, 3 weeks post-stress, and 4 weeks
-# post-stress) There are 12 mice for each group/timepoint, but Sample #167 was removed due to low read
-# counts, giving our 71 samples.
+# post-stress). Importantly, Mucin treatment does not start until Week 4, so Control and Mucin-
+# supplemented groups are identical at baseline and 3 weeks post-stress. There are 12 mice for each 
+# group/timepoint, but Sample #167 was removed due to low read counts, giving our 71 samples.
 
 dim(ps.mucin@otu_table) # From these 71 samples, there were 1795 unique ASVs.
 
@@ -219,12 +220,44 @@ combinations <- c("Control Pre/Mucin Pre", "Control Pre/Control 3wk", "Control P
 permanova.FDR.bray <- p.adjust(permanova.p.bray, method = "bonferroni")
 permanova.bray.table <- cbind(combinations, permanova.p.bray)
 permanova.bray.table <- cbind(permanova.bray.table, permanova.FDR.bray)
-?p.adjust
+
 View(permanova.bray.table)
 
 # According to the pairwise comparisons of the PERMANOVA, all groups are significantly different
 # from each other except for Control and Mucin groups pre-stress and Control and Mucin groups at 
-# 3 weeks. This is consistent with intial impressions of the plot when looking by eye.
+# 3 weeks. This is consistent with initial impressions of the plot when looking by eye.
+
+
+# The Gautier lab requested that I recolor the Bray-Curtis plot using colors they plan to use for
+# other plots. I'll also combine Control and Mucin groups pre-intervention and at 3 weeks, since 
+# these groups are identical at these timepoints.
+
+# To start, I'll add a column to the metadata for these color groupings.
+
+ps.mucin@sam_datafactor(ps.mucin@sam_data$Condition, levels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"))
+
+View(ps.mucin.prop@sam_data)
+
+ps.mucin.prop@sam_data$Group <- NA
+ps.mucin.prop@sam_data$Group[ps.mucin.prop@sam_data$Condition == "Control Pre" | ps.mucin.prop@sam_data$Condition == "Mucin Pre"] <- "Baseline"
+ps.mucin.prop@sam_data$Group[ps.mucin.prop@sam_data$Condition == "Control 3wk" | ps.mucin.prop@sam_data$Condition == "Mucin 3wk "] <- "3 Wk Stress"
+ps.mucin.prop@sam_data$Group[ps.mucin.prop@sam_data$Condition == "Control 4wk"] <- "Stress Alone"
+ps.mucin.prop@sam_data$Group[ps.mucin.prop@sam_data$Condition == "Mucin 4wk"] <- "Stress + Mucin"
+
+ps.mucin.prop@sam_data$Group <- factor(ps.mucin.prop@sam_data$Group, levels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin"))
+
+# Now, I'll re-plot the Bray-Curtis Dissimilarity with the selected colors.
+
+plot_ordination(ps.mucin.prop, ord.nmds.bray, color = "Group", 
+                title = "Bray-Curtis Dissimilarity") +
+  theme_bw() +
+  scale_color_manual(name = "Group", 
+                     values = c("#941650", "#1c7798", "#521b92", "#4d8e00"),
+                       breaks = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin"), 
+                       labels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin")) +
+  theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
+
+ggsave("./results/figures/mucin/Mucin Experiment_beta_diversity_bc_colors.png", width = 4, height = 4)
 
 
 
@@ -336,13 +369,6 @@ ggsave("./results/figures/mucin/Mucin Experiment_community_composition_phylum.pn
 
 
 
-write.csv(summarized.abundance.phylum.figure, file = "composition sample 2.csv")
-
-
-
-
-
-
 
 ### COMMUNITY COMPOSITION: FAMILY LEVEL #############################################################
 # There appear to be some broad differences in diversity between groups. I'll now see if this is
@@ -424,6 +450,89 @@ ggsave("./results/figures/mucin/Mucin Experiment_community_composition_family.pn
 
 
 
-write.csv(summarized.abundance.family.figure, file = "composition sample 2.csv")
+
+### COMMUNITY COMPOSITION: ORDER LEVEL #############################################################
+# The Gautier lab also wanted to see what relative abundances looked like at the order level. I'll
+# now calculate relative abundance values for each order level taxa and organize it into a table.
+# For this analysis I won't be grouping Orders that are less than 1% relative abundance together.
+# I'll also be using the "Group" column to generate relative abundance.
 
 
+ps.mucin.prop.order <- tax_glom(ps.mucin.prop, "Order", NArm = FALSE)
+order.table <- psmelt(ps.mucin.prop.order) # Organize in long format for ggplot.
+
+table(ps.mucin.prop@sam_data$Group) # There are 24 samples for "Baseline" and "3 Wk Stress" groups, 12
+# samples for the "Stress Alone" group, and 11 samples for the "Stress + Mucin" group. I'll 
+# separate these groups to generate relative abundances as a percentage by dividing by the total
+# number of samples in each group.
+
+order.table.mucin.baseline.3wk <- filter(order.table, Group == "Baseline" | Group == "3 Wk Stress")
+order.table.mucin.baseline.3wk$Relative.Abundance <- NA
+order.table.mucin.baseline.3wk$Relative.Abundance <- order.table.mucin.baseline.3wk$Abundance / 24 *100
+
+
+order.table.stress <- filter(order.table, Group == "Stress Alone")
+order.table.stressRelative.Abundance <- NA
+order.table.stress$Relative.Abundance <- order.table.stress$Abundance / 12 *100
+
+
+order.table.stress.mucin <- filter(order.table, Group == "Stress + Mucin")
+order.table.stress.mucinRelative.Abundance <- NA
+order.table.stress.mucin$Relative.Abundance <- order.table.stress.mucin$Abundance / 11 *100
+
+
+order.table.mucin <- rbind(order.table.mucin.baseline.3wk, order.table.stress)
+order.table.mucin <- rbind(order.table.mucin, order.table.stress.mucin)
+
+
+order.table.mucin <- as.data.frame(order.table.mucin)
+
+# First, I'll summarize relative abundance information per taxonomic group.
+summarized.abundance.order <- order.table.mucin %>%
+  group_by(Order, Group) %>%
+  summarize(Total.Relative.Abundance = (sum(Relative.Abundance)))
+
+summarized.abundance.order$Order <- as.character(replace_na(summarized.abundance.order$Order, replace = "Unidentified"))
+
+# Now I'll organize the data out of a wide format, so that relative abundance values for each 
+# condition are their own column.
+
+summarized.abundance.order <- filter(summarized.abundance.order, Total.Relative.Abundance > 0)
+
+summarized.abundance.order.baseline <- filter(summarized.abundance.order, Group == "Baseline")
+summarized.abundance.order.baseline <- plyr::rename(summarized.abundance.order.baseline, replace = c("Total.Relative.Abundance" = "Baseline Relative Abundance (%)"))
+summarized.abundance.order.baseline <- select(summarized.abundance.order.baseline, -Group)
+
+summarized.abundance.order.3wk <- filter(summarized.abundance.order, Group == "3 Wk Stress")
+summarized.abundance.order.3wk <- plyr::rename(summarized.abundance.order.3wk, replace = c("Total.Relative.Abundance" = "3 Wk Stress Relative Abundance (%)"))
+summarized.abundance.order.3wk <- select(summarized.abundance.order.3wk, -Group)
+
+summarized.abundance.order.stress <- filter(summarized.abundance.order, Group == "Stress Alone")
+summarized.abundance.order.stress <- plyr::rename(summarized.abundance.order.stress, replace = c("Total.Relative.Abundance" = "Stress Alone Relative Abundance (%)"))
+summarized.abundance.order.stress <- select(summarized.abundance.order.stress, -Group)
+
+summarized.abundance.order.mucin <- filter(summarized.abundance.order, Group == "Stress + Mucin")
+summarized.abundance.order.mucin <- plyr::rename(summarized.abundance.order.mucin, replace = c("Total.Relative.Abundance" = "Stress + Mucin Relative Abundance (%)"))
+summarized.abundance.order.mucin <- select(summarized.abundance.order.mucin, -Group)
+
+summarized.abundance.order.wide <- full_join(summarized.abundance.order.baseline, summarized.abundance.order.3wk, by = "Order")
+summarized.abundance.order.wide <- full_join(summarized.abundance.order.wide, summarized.abundance.order.stress, by = "Order")
+summarized.abundance.order.wide <- full_join(summarized.abundance.order.wide, summarized.abundance.order.mucin, by = "Order")
+
+summarized.abundance.order.wide <- replace_na(summarized.abundance.order.wide, list("Baseline Relative Abundance (%)" = 0, 
+                                                                                     "3 Wk Stress Relative Abundance (%)" = 0,
+                                                                                     "Stress Alone Relative Abundance (%)" = 0,
+                                                                                     "Stress + Mucin Relative Abundance (%)" = 0))
+
+
+# Get additional taxonomic information
+taxa.order <- order.table.mucin %>%
+  select(Kingdom, Phylum, Class, Order) %>%
+  group_by(Order) %>%
+  slice(1L) %>%
+  ungroup()
+
+summarized.abundance.order.wide <- left_join(summarized.abundance.order.wide, taxa.order, by = "Order")
+summarized.abundance.order.wide <- select(summarized.abundance.order.wide, Kingdom, Phylum, Class, Order, everything())
+
+write.csv(summarized.abundance.order.wide, file = "results/tables/mucin/Order Level Relative Abundance.csv", row.names = FALSE)

@@ -45,9 +45,6 @@ View(track)
 # is in line with other samples. Because of this, I'll go ahead and include this sample in the 
 # analysis.
 
-# On the other end of the spectrum, Sample #25 had significantly more reads (2x the next lowest) 
-# than other samples. 
-
 # On the other end of the spectrum, Sample # 25 had over 2x more reads than the next highest 
 # sample. There are several schools of thought on how to deal with large differences in read count
 # between samples, mostly focusing around whether samples should be rarefied/subsampled. This 

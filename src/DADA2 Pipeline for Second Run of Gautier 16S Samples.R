@@ -82,7 +82,7 @@ set.seed(624)
 plotQualityProfile(fnFs[1:2])
 plotQualityProfile(fnFs, aggregate = TRUE)
 
-ggsave("./results/Quality_Profile_forward_reads.png", width = 5, height = 3)
+ggsave("./results/figures/Quality_Profile_forward_reads.png", width = 5, height = 3)
 
 
 # Overall, the forward reads look ok. There is an initial drop in quality in the first 15-20 base
@@ -93,7 +93,7 @@ ggsave("./results/Quality_Profile_forward_reads.png", width = 5, height = 3)
 plotQualityProfile(fnRs[1:2])
 plotQualityProfile(fnRs, aggregate = TRUE)
 
-ggsave("./results/Quality_Profile_reverse_reads.png", width = 5, height = 3)
+ggsave("./results/figures/Quality_Profile_reverse_reads.png", width = 5, height = 3)
 
 
 # The reverse reads are pretty rough, even for reverse reads. The reads average pretty high quality

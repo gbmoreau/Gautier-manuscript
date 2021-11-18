@@ -211,7 +211,7 @@ plot_ordination(ps.mucin.prop, ord.nmds.bray, color = "Group",
                        labels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin")) +
   theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
 
-ggsave("./results/figures/mucin/Mucin Experiment_beta_diversity_bc_colors.png", width = 4, height = 4)
+ggsave("./results/figures/mucin/Mucin Experiment_beta_diversity_bc.png", width = 4, height = 4)
 
 
 # Bray-Curtis distance is ordinated using Non-metric multidimensional scaling (NMDS). Based on the
@@ -460,8 +460,67 @@ ggsave("./results/figures/mucin/Mucin Experiment_community_composition_family.pn
 
 
 
+#### FAMILY LEVEL DIFFERENCES: BASELINE VS 3 WEEK STRESS ############################################
+# I now want to plot these differences by Family group. I'll only be plotting the abundant families
+# (those with a relative abundance above 1% in at least one Group). I'll start by taking the family
+# table I generated previously and filtering it to include only these abundant families.
 
-### COMMUNITY COMPOSITION: ORDER LEVEL #############################################################
+family.table.mucin.abundant <- filter(family.table.mucin, Family %in% abundant.families)
+
+# I'll look at these comparisons in pairs to keep the figure from getting too complicated. I'll start
+# by looking at the effect of stress alone, looking at Baseline vs. 3 week stress samples. I'll
+# filter to include only these samples.
+
+family.table.mucin.abundant.stress <- filter(family.table.mucin.abundant, Group == "Baseline" | Group == "3 Wk Stress")
+family.table.mucin.abundant.stress$Group <- factor(family.table.mucin.abundant.stress$Group, levels = c("Baseline", "3 Wk Stress"))
+
+# I'll now plot abundance for each sample. Abundances are expressed as a percentage of each sample,
+# so I'll format the x axis as a percentage.
+
+ggplot(family.table.mucin.abundant.stress, aes(x = Abundance, y = Family, color = Group)) +
+  geom_boxplot() +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_discrete(limits = rev) +
+  scale_color_manual(name = "Group", 
+                     values = c("#941650", "#1c7798"), 
+                     breaks = c("Baseline", "3 Wk Stress"), 
+                     labels = c("Baseline", "3 Wk Stress")) +
+  labs(x = "Relative Abundance", y = NULL) 
+ 
+ggsave("./results/figures/mucin/Mucin Experiment_family abundance_mucin.png", width = 6, height = 5)
+
+
+
+
+#### FAMILY LEVEL DIFFERENCES: STRESS ALONE VS STRESS + MUCIN ########################################
+# Now I'll repeat this process, comparing the 4 week samples. I want to see if there are any major
+# differences in families between the Control group (Stress Alone) and the Mucin-supplemented group
+# (Stress + Mucin). I'll filter to include only these samples.
+
+family.table.mucin.abundant.mucin <- filter(family.table.mucin.abundant, Group == "Stress Alone" | Group == "Stress + Mucin")
+family.table.mucin.abundant.mucin$Group <- factor(family.table.mucin.abundant.mucin$Group, levels = c("Stress Alone", "Stress + Mucin"))
+
+# I'll now plot abundance for each sample. Abundances are expressed as a percentage of each sample,
+# so I'll format the x axis as a percentage.
+
+ggplot(family.table.mucin.abundant.mucin, aes(x = Abundance, y = Family, color = Group)) +
+  geom_boxplot() +
+  theme_bw() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_discrete(limits = rev) +
+  scale_color_manual(name = "Group", 
+                     values = c("#521b92", "#4d8e00"), 
+                     breaks = c("Stress Alone", "Stress + Mucin"), 
+                     labels = c("Stress Alone", "Stress + Mucin")) +
+  labs(x = "Relative Abundance", y = NULL) 
+
+ggsave("./results/figures/mucin/Mucin Experiment_family abundance_stress.png", width = 6, height = 5)
+
+
+
+
+#### COMMUNITY COMPOSITION: ORDER LEVEL #############################################################
 # The Gautier lab also wanted to see what relative abundances looked like at the order level. I'll
 # now calculate relative abundance values for each order level taxa and organize it into a table.
 # For this analysis I won't be grouping Orders that are less than 1% relative abundance together.

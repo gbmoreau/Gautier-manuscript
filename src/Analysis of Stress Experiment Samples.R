@@ -84,7 +84,8 @@ range(total.reads) # The range of reads in samples is from 43,957-117,986 total 
 # also divide by the number of samples because they are identical in each group, resulting in 
 # values that represent percent of total for each taxa.
 
-ps.stress@sam_data$Condition <- factor(ps.stress@sam_data$Condition, levels = c("Naïve Pre", "Naïve Post", "Stress Pre", "Stress Post"))
+ps.stress@sam_data$Condition <- factor(ps.stress@sam_data$Condition, 
+                                       levels = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post"))
 ps.stress.prop <- transform_sample_counts(ps.stress, function(ASV) ASV/sum(ASV)/6*100) 
 
 
@@ -109,11 +110,11 @@ plot_richness(ps.stress, x = "Condition", measures = c("Observed"),
   theme(axis.title.x = element_blank()) +
   theme(axis.text.x = element_blank()) +
   scale_color_discrete(name = "Condition", 
-                       breaks = c("Naïve Pre", "Naïve Post", "Stress Pre", "Stress Post"), 
-                       labels = c("Naïve Pre", "Naïve Post", "Stress Pre", "Stress Post")) 
+                       breaks = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post"), 
+                       labels = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post")) 
 
 
-ggsave("./results/figures/stress/Stress Experiment_richness_observed.png")
+ggsave("./results/figures/stress/Stress Experiment_richness_observed.png", width = 4, height = 4)
 
 # None of the groups appear to have signifcant differences between each other regarding richness. 
 # There looks like a small increase in observed ASVs in both Naive and Stressed mice post-
@@ -148,7 +149,7 @@ ggplot(sample.data.stress, aes(x = Condition, y = pielou, color = Condition)) +
   theme_bw() +
   theme(legend.position = "none")
 
-ggsave("./results/figures/stress/Stress Experiment_evenness_pielou.png")
+ggsave("./results/figures/stress/Stress Experiment_evenness_pielou.png", width = 4, height = 4)
 
 # Overall, there doesn't appear to be a whole lot of separation in evenness between groups. 
 # There is a lot of spread between individuals within each group, which makes the data a 
@@ -162,14 +163,11 @@ pairwise.wilcox.test(evenness$pielou, p.adjust.method = "bonferroni", sample_dat
 
 
 
-#### BETA DIVERSITY #######################################################################
-
-
 #### BETA DIVERSITY: BRAY-CURTIS DISSIMILARITY  #####################################################
 # I'll now move on to measures of beta diversity, which investigates variation between samples.
 # I'll start by looking at Bray-Curtis Dissimilarity.
 
-sample(1:1000, 1) # It selected 763
+#sample(1:1000, 1) # It selected 763
 set.seed(763) # Set seed for reproducibility
 
 # First, let's ordinate Bray-Curtis Dissimilarity using NMDS, then plot this ordination to visualize
@@ -181,17 +179,18 @@ plot_ordination(ps.stress.prop, ord.nmds.bray, color = "Condition",
                 title = "Bray-Curtis Dissimilarity") +
   theme_bw() +
   scale_color_discrete(name = "Condition", 
-                       breaks = c("Naïve Pre", "Naïve Post", "Stress Pre", "Stress Post"), 
-                       labels = c("Naïve Pre", "Naïve Post", "Stress Pre", "Stress Post")) +
+                       breaks = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post"), 
+                       labels = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post")) +
   theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
 
-ggsave("./results/figures/stress/Stress Experiment_beta_diversity_bc.png", width = 6, height = 6)
+ggsave("./results/figures/stress/Stress Experiment_beta_diversity_bc.png", width = 5, height = 5)
 
 
 # Bray-Curtis distance is ordinated using Non-metric multidimensional scaling (NMDS). It looks like
 # while there is overlap between groups, groups are clustering somewhat distinctly from each other.
-# To better explore this, I'll perform a PERMANOVA to see if there are any differences in clustering
-# between groups.
+# In particular, the Stress Post group seems to be distinct from other groups, while the other 3
+# groups are more mixed amongst each other.To better explore this, I'll perform a PERMANOVA to see 
+# if there are any differences in clustering between groups.
 
 adonis(distance(ps.stress.prop, method = "bray") ~sample_data(ps.stress.prop)$Condition)
 
@@ -217,8 +216,10 @@ permanova.bray.table <- cbind(permanova.bray.table, permanova.FDR.bray)
 View(permanova.bray.table)
 
 # Looking at the pairwise comparisons, it looks like clustering is significantly different for
-# all comaprisons except for Naive Pre vs. Naive Post and Naive Pre vs Stress Pre. I'll now
-# look at Unweighted Unifrac as a measure of beta diversity.
+# all comaprisons except for Naive Pre vs. Naive Post and Naive Pre vs Stress Pre. Naive Pre
+# and Post should be identical (no differences in treatment between these groups) and Naive Pre
+# and Stress Pre should be identical (neither has received stress treatment), so these results
+# make sense.
 
 
 
@@ -238,12 +239,12 @@ ordination <- ordinate(ps.stress.prop, method = "PCoA", distance = unifrac_dist)
 plot_ordination(ps.stress.prop, ordination, color = "Condition") + 
   theme_bw() +
   scale_color_discrete(name = "Condition", 
-                       breaks = c("Naïve Pre", "Naïve Post", "Stress Pre", "Stress Post"), 
-                       labels = c("Naïve Pre", "Naïve Post", "Stress Pre", "Stress Post")) +
+                       breaks = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post"), 
+                       labels = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post")) +
   labs(title = "Unweighted Unifrac Distance") +
   theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
 
-ggsave("./results/figures/stress/Stress Experiment_beta_diversity_unifrac.png", width = 6, height = 6)
+ggsave("./results/figures/stress/Stress Experiment_beta_diversity_unifrac.png", width = 5, height = 5)
 
 
 # Unweighted Unifrac distance is ordinated using Principal Coordinate Analysis (PCoA). Once again,
@@ -271,8 +272,297 @@ permanova.unifrac.table <- cbind(combinations, permanova.p.unifrac)
 permanova.unifrac.table <- cbind(permanova.unifrac.table, permanova.FDR.unifrac)
 
 View(permanova.unifrac.table)
-# Pairwise comparisons of PERMANOVA from Unifrac distance found the same groups were significantly
-# different as the groups identified from the Bray-Curtis pairwise comparisons.Overall, beta 
-# diversity measures found very similar results, suggesting that there are some differences 
-# between groups.
+
+# Pairwise comparisons of PERMANOVA from Unifrac distance found similar results to those seen
+# with Bray-Curtis dissimilarity. Specifically, the Stress Post group was statistically 
+# significant from both pre-intervention groups, as hypothesized. However, it was not significantly
+# different from the Naive Post group.Overall, beta diversity measures found very similar results, 
+# suggesting that there are some differences between groups.
+
+
+
+
+### COMMUNITY COMPOSITION: PHYLUM LEVEL #############################################################
+# There appear to be some broad differences in diversity between groups. I'll now see if this is
+# reflected by any broad changes in community composition across groups. I'll start by looking at
+# the phylum level, looking at all phyla that make up at least 1% of the relative abundance in at
+# least one group.
+
+ps.stress.prop.phylum <- tax_glom(ps.stress.prop, "Phylum", NArm = FALSE)
+phylum.table.stress <- psmelt(ps.stress.prop.phylum) # Organize in long format for ggplot.
+
+table(ps.stress.prop@sam_data$Condition)
+
+# There are an equal number of samples (n=6) in each group. Because of this, the 
+# Abundance column is already formatted to generate relative abundance as a percent
+# of the total condition, so I'll just use this for analysis.
+
+# I'll plot the data to get an overview of differences between groups.
+ggplot(phylum.table.stress, aes(x = Condition, y = Abundance, fill = Phylum)) +
+  geom_bar(stat = "identity") 
+
+# I want to clean this figure up a little bit by including only phyla that make up
+# at least 1% in at least one group.
+
+# First, I'll summarize relative abundance information per taxonomic group.
+summarized.abundance.phylum <- phylum.table.stress %>%
+  group_by(Phylum, Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Abundance)))
+
+summarized.abundance.phylum$Phylum <- as.character(replace_na(summarized.abundance.phylum$Phylum, replace = "Unidentified"))
+
+# Now, I'll collect taxa names for taxa with relative abundance above 1% in any group. These
+# names will be preserved in each group.
+summarized.abundance.phylum.above1 <- filter(summarized.abundance.phylum, Total.Relative.Abundance >= 1.0)
+summarized.abundance.phylum.above1$Phylum <- factor(summarized.abundance.phylum.above1$Phylum, 
+                                                    levels = sort(unique(summarized.abundance.phylum.above1$Phylum)))
+abundant.families <- as.character(unique(summarized.abundance.phylum.above1$Phylum)) 
+table(abundant.families) # There are 4 Phyla that have a Total Relative Abundance above 1%
+
+# Make new data frames either including or excluding abundant families.
+summarized.abundance.phylum.no.remainder <- filter(summarized.abundance.phylum, 
+                                                   Phylum %in% abundant.families)
+
+# I'll now summarize the remainder samples that compose less than 1% of relative abundance per group.
+summarized.abundance.phylum.remainders.only <- anti_join(summarized.abundance.phylum, summarized.abundance.phylum.no.remainder, by = "Phylum")
+
+summarized.abundance.phylum.remainders.only.summary <- summarized.abundance.phylum.remainders.only %>%
+  group_by(Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Total.Relative.Abundance))) %>%
+  mutate(Phylum = "Phyla < 1%", .before = 1)
+
+
+# Now I'll combine abundant families with the low abundance remainders to account for 100% of total 
+# abundance. This data frame will be used to generate the community composition figure.
+
+summarized.abundance.phylum.figure <- rbind(summarized.abundance.phylum.no.remainder, summarized.abundance.phylum.remainders.only.summary)
+summarized.abundance.phylum.figure$Phylum <- factor(summarized.abundance.phylum.figure$Phylum, levels = c("Bacteroidota", "Firmicutes", "Proteobacteria", "Verrucomicrobiota", "Phyla < 1%"))
+
+ggplot(summarized.abundance.phylum.figure, aes(x = Condition, y = Total.Relative.Abundance, fill = Phylum)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  labs(x = NULL, y = "Relative Abundance (%)")
+
+ggsave("./results/figures/stress/stress Experiment_community_composition_phylum.png", width = 5, height = 4)
+
+
+
+
+### COMMUNITY COMPOSITION: FAMILY LEVEL #############################################################
+# There appear to be some differences at the phylum level. I'll now look at the family level to see
+# how these differences are reflected here.
+
+ps.stress.prop.family <- tax_glom(ps.stress.prop, "Family", NArm = FALSE)
+family.table.stress <- psmelt(ps.stress.prop.family) # Organize in long format for ggplot.
+
+table(ps.stress@sam_data$Condition) 
+
+# Since all groups have equal number of samples, I'll just use the Abundance column.
+
+# I'll plot the data to get an overview of differences between groups.
+ggplot(family.table.stress, aes(x = Condition, y = Abundance, fill = Family)) +
+  geom_bar(stat = "identity") 
+
+# This figure is pretty cluttered. To clean it up, I'll filter out all Families that make up less than 1
+# % of total in any group and place them in their own category.
+
+
+# First, I'll summarize relative abundance information per taxonomic group.
+summarized.abundance.family <- family.table.stress %>%
+  group_by(Family, Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Abundance)))
+
+summarized.abundance.family$Family <- as.character(replace_na(summarized.abundance.family$Family, replace = "Unidentified"))
+
+# Now, I'll collect taxa names for taxa with relative abundance above 1% in any group. These
+# names will be preserved in each group.
+summarized.abundance.family.above1 <- filter(summarized.abundance.family, Total.Relative.Abundance >= 1.0)
+summarized.abundance.family.above1$Family <- factor(summarized.abundance.family.above1$Family, 
+                                                    levels = sort(unique(summarized.abundance.family.above1$Family)))
+abundant.families <- as.character(unique(summarized.abundance.family.above1$Family)) 
+table(abundant.families) # There are 11 Families (and 1 group of unidentified families) that have a Total Relative 
+# Abundance above 1%
+
+# Make new data frames either including or excluding abundant families.
+summarized.abundance.family.no.remainder <- filter(summarized.abundance.family, 
+                                                   Family %in% abundant.families)
+
+# I'll now summarize the remainder samples that compose less than 1% of relative abundance per group.
+summarized.abundance.family.remainders.only <- anti_join(summarized.abundance.family, summarized.abundance.family.no.remainder, by = "Family")
+
+summarized.abundance.family.remainders.only.summary <- summarized.abundance.family.remainders.only %>%
+  group_by(Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Total.Relative.Abundance))) %>%
+  mutate(Family = "Families < 1%", .before = 1)
+
+
+# Now I'll combine abundant families with the low abundance remainders to account for 100% of total 
+# abundance. This data frame will be used to generate the community composition figure.
+
+summarized.abundance.family.figure <- rbind(summarized.abundance.family.no.remainder, summarized.abundance.family.remainders.only.summary)
+summarized.abundance.family.figure$Family <- factor(summarized.abundance.family.figure$Family, levels = c("Akkermansiaceae", "Bacteroidaceae","Clostridiaceae", "Erysipelotrichaceae", "Lachnospiraceae", 
+                                                                                                          "Lactobacillaceae", "Muribaculaceae", "Oscillospiraceae", "Peptostreptococcaceae", "Ruminococcaceae", 
+                                                                                                          "Sutterellaceae", "Unidentified", "Families < 1%"))
+
+ggplot(summarized.abundance.family.figure, aes(x = Condition, y = Total.Relative.Abundance, fill = Family)) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  labs(x = NULL, y = "Relative Abundance (%)")
+
+
+ggsave("./results/figures/stress/stress Experiment_community_composition_family.png", width = 6, height = 4)
+
+
+
+#### FAMILY LEVEL DIFFERENCES ########################################################################
+# I now want to plot these differences by Family group. I'll only be plotting the abundant families
+# (those with a relative abundance above 1% in at least one Condition).
+
+family.table.stress.abundant <- filter(family.table.stress, Family %in% abundant.families)
+family.table.stress.abundant$Abundance <- family.table.stress.abundant$Abundance *10
+
+# I'll now plot abundance for each sample. Abundances are expressed as a percentage of each sample,
+# so I'll format the x axis as a percentage.
+
+ggplot(family.table.stress.abundant, aes(x = Abundance, y = Family, color = Condition)) +
+  geom_boxplot() +
+  theme_bw() +
+  scale_y_discrete(limits = rev) +
+  labs(x = "Relative Abundance (%)", y = NULL) 
+
+ggsave("./results/figures/stress/stress Experiment_family abundance_stress.png", width = 6, height = 5)
+
+
+
+
+#### COMMUNITY COMPOSITION: ORDER LEVEL #############################################################
+# The Gautier lab also wanted to see what relative abundances looked like at the order level. I'll
+# now calculate relative abundance values for each order level taxa and organize it into a table.
+# For this analysis I won't be grouping Orders that are less than 1% relative abundance together.
+# I'll also be using the "Group" column to generate relative abundance.
+
+
+ps.stress.prop.order <- tax_glom(ps.stress.prop, "Order", NArm = FALSE)
+order.table.stress <- psmelt(ps.stress.prop.order) # Organize in long format for ggplot.
+
+table(ps.stress.prop@sam_data$Condition) 
+
+# Since all groups have equal number of samples, I'll just use the Abundance column.
+
+
+# First, I'll summarize relative abundance information per taxonomic group.
+summarized.abundance.order <- order.table.stress %>%
+  group_by(Order, Condition) %>%
+  summarize(Total.Relative.Abundance = (sum(Abundance)))
+
+summarized.abundance.order$Order <- as.character(replace_na(summarized.abundance.order$Order, replace = "Unidentified"))
+
+# Now I'll organize the data out of a wide format, so that relative abundance values for each 
+# condition are their own column.
+
+summarized.abundance.order <- filter(summarized.abundance.order, Total.Relative.Abundance > 0)
+
+summarized.abundance.order.naive.pre <- filter(summarized.abundance.order, Condition == "Naïve Pre")
+summarized.abundance.order.naive.pre <- plyr::rename(summarized.abundance.order.naive.pre, replace = c("Total.Relative.Abundance" = "Naive Pre Relative Abundance (%)"))
+summarized.abundance.order.naive.pre <- select(summarized.abundance.order.naive.pre, -Condition)
+
+summarized.abundance.order.stress.pre <- filter(summarized.abundance.order, Condition == "Stress Pre")
+summarized.abundance.order.stress.pre <- plyr::rename(summarized.abundance.order.stress.pre, replace = c("Total.Relative.Abundance" = "Stress Pre Relative Abundance (%)"))
+summarized.abundance.order.stress.pre <- select(summarized.abundance.order.stress.pre, -Condition)
+
+summarized.abundance.order.naive.post <- filter(summarized.abundance.order, Condition == "Naïve Post")
+summarized.abundance.order.naive.post <- plyr::rename(summarized.abundance.order.naive.post, replace = c("Total.Relative.Abundance" = "Naive Post Relative Abundance (%)"))
+summarized.abundance.order.naive.post <- select(summarized.abundance.order.naive.post, -Condition)
+
+summarized.abundance.order.stress.post <- filter(summarized.abundance.order, Condition == "Stress Post")
+summarized.abundance.order.stress.post <- plyr::rename(summarized.abundance.order.stress.post, replace = c("Total.Relative.Abundance" = "Stress Post Relative Abundance (%)"))
+summarized.abundance.order.stress.post <- select(summarized.abundance.order.stress.post, -Condition)
+
+summarized.abundance.order.wide <- full_join(summarized.abundance.order.naive.pre, summarized.abundance.order.stress.pre, by = "Order")
+summarized.abundance.order.wide <- full_join(summarized.abundance.order.wide, summarized.abundance.order.naive.post, by = "Order")
+summarized.abundance.order.wide <- full_join(summarized.abundance.order.wide, summarized.abundance.order.stress.post, by = "Order")
+
+summarized.abundance.order.wide <- replace_na(summarized.abundance.order.wide, list("Naive Pre Relative Abundance (%)" = 0, 
+                                                                                    "Stress Pre Relative Abundance (%)" = 0,
+                                                                                    "Naive Post Relative Abundance (%)" = 0,
+                                                                                    "Stress Post Relative Abundance (%)" = 0))
+
+
+# Get additional taxonomic information
+taxa.order <- order.table.stress %>%
+  select(Kingdom, Phylum, Class, Order) %>%
+  group_by(Order) %>%
+  slice(1L) %>%
+  ungroup()
+
+summarized.abundance.order.wide <- left_join(summarized.abundance.order.wide, taxa.order, by = "Order")
+summarized.abundance.order.wide <- select(summarized.abundance.order.wide, Kingdom, Phylum, Class, Order, everything())
+
+write.csv(summarized.abundance.order.wide, file = "results/tables/stress/Order Level Relative Abundance.csv", row.names = FALSE)
+
+
+
+
+#### SELECTION OF ASVs ASSOCIATED WITH STRESS TREATMENT #############################################
+# I'll now move on to identify ASVs that best discriminate between groups. There are two comparisons
+# we are interested in for this experiment:
+## 1) Baseline (n=24) vs. 3 Wk Stress samples (n=24)
+## 2) Stress only (n=12) vs. Stress + Mucin (n=11)
+
+
+# I'll start with the Baseline vs 3 Wk Stress comparison. I'll use a Random Forest model to select
+# features
+
+
+
+
+#### ORGANIZATION OF ASVs FROM VEHICLE AND FMT RECIPIENT SAMPLES ########################################
+# I'll be comparing only the vehicle control and FMT recipient groups for this analysis. I want to first
+# summarize the abundance of each ASV within a given group. I'm only interested in Baseline or 3 Wk 
+# samples, so I'll filter the data set to include only these samples.
+
+ps.mucin.stress.ASV <- subset_samples(ps.mucin, Experiment == "Mucin Therapeutic ")
+ps.mucin@sam_data
+ASV.table.mucin <- psmelt(ps.mucin)
+# I'm only interested 
+
+length(unique(ASV.table.mucin$OTU)) #1795 unique ASVs across all samples.
+
+
+# Here is a summarized table of the abundance of each ASV in the Vehicle control compared to the FMT
+# Recipient group.
+ASV.table.summary <- ASV.table %>%
+  group_by(OTU, experimental_group) %>%
+  summarize(Abundance.per.Group = (sum(Abundance))) %>%
+  filter(experimental_group != "FMT_DONOR") %>%
+  filter(any(Abundance.per.Group > 0)) # Removes any ASVs with an abundance of 0 in both groups.
+
+length(unique(ASV.table.summary$OTU)) # There are a total of 132 unique ASVs in these samples.
+
+unique.ASVs <- as.data.frame(unique(ASV.table.summary$OTU))
+unique.ASVs <- plyr::rename(unique.ASVs, replace = c("unique(ASV.table.summary$OTU)" = "OTU"))
+
+
+# Now I'll make another data set, this time keeping Abundance values for each individual sample.
+ASV.table.samples <- filter(ASV.table, experimental_group != "FMT_DONOR")
+ASV.table.samples <- left_join(unique.ASVs, ASV.table.samples, by = "OTU")
+
+length(unique(ASV.table.samples$OTU)) # 132 unique ASVs as expected.
+
+
+# I'll reshape the data into a wide format for analysis.
+ASV.table.wide <- select(ASV.table.samples, OTU, Sample, Abundance, experimental_group)
+ASV.table.wide <- spread(ASV.table.wide, key = OTU, value = Abundance)
+
+# Now I'll split the data into Vehicle and FMT groups
+ASV.table.wide.Vehicle <- filter(ASV.table.wide, experimental_group == "Vehicle_recipient")
+ASV.table.wide.FMT <- filter(ASV.table.wide, experimental_group == "FMT_Recipient")
+
+
+
+
+### TRAINING AND TEST SET GENERATION: STRESS TREATMENT ###############################################
+
+
+
 

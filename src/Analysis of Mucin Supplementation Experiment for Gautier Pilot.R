@@ -51,7 +51,7 @@ packageVersion("pROC") # I'm using version 1.18.0
 # now be run through the DADA2 pipeline.
 
 
-setwd("..")
+
 
 #### LOAD PHYLOSEQ OBJECT ##########################################################################
 # I'll start by loading the initial phyloseq object generated after the DADA2 pipeline. This will be 

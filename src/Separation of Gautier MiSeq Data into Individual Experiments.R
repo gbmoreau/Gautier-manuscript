@@ -71,8 +71,26 @@ ps.stress <- subset_samples(ps, Experiment == "Nov Stress Experiment")
 # Experiment 2: Mucin Supplementation 
 ps.mucin <- subset_samples(ps, Experiment == "Mucin Therapeutic ")
 
+# The metadata divides samples into 6 groups based on the 2 experimental groups and 3 timepoints. 
+# However experimental treatment (control vs mucin-supplemented) does not happen until the 4 week 
+# timepoint. Thus, Control and Mucin-supplemented samples are identical pre-stress and at 3 weeks
+# post-stress. Because of this, I'll add a "Group" column to the metadata which combines pre-
+# stress and 3 week samples into one group.
 
-# Save phyloseq objects into a separate .RData file
+ps.mucin@sam_data$Group <- NA
+ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Control Pre" | ps.mucin@sam_data$Condition == "Mucin Pre"] <- "Baseline"
+ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Control 3wk" | ps.mucin@sam_data$Condition == "Mucin 3wk "] <- "3 Wk Stress"
+ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Control 4wk"] <- "Stress Alone"
+ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Mucin 4wk"] <- "Stress + Mucin"
+
+ps.mucin@sam_data$Group <- factor(ps.mucin@sam_data$Group, 
+                                  levels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin"))
+
+ps.mucin@sam_data$Condition <- factor(ps.mucin@sam_data$Condition, 
+                                      levels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"))
+
+
+# The data will now be saved as separate .RData file for downstream analysis.
 rm(list = ls()[!ls() %in% c("ps.stress", "ps.mucin", "seqtab.nochim")])
 
 save.image(file = "./results/phyloseq objects by experiment.RData")

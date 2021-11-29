@@ -28,9 +28,18 @@ packageVersion("microbiome") # I'm using version 1.16.0
 library(vegan)
 packageVersion("vegan") # I'm using version 2.5.7
 
+#install.packages("caret")
+library(caret)
+packageVersion("caret") # I'm using version 6.0.90
+
 #install.packages("randomForest")
 library(randomForest)
 packageVersion("randomForest") # I'm using version 4.6.14
+
+#install.packages("pROC")
+library(pROC)
+packageVersion("pROC") # I'm using version 1.18.0
+
 
 #### INTRODUCTION ##################################################################################
 # The Gautier TUMI pilot project is focused on investigating changes in the intestinal microbiome 
@@ -42,7 +51,7 @@ packageVersion("randomForest") # I'm using version 4.6.14
 # now be run through the DADA2 pipeline.
 
 
-
+setwd("..")
 
 #### LOAD PHYLOSEQ OBJECT ##########################################################################
 # I'll start by loading the initial phyloseq object generated after the DADA2 pipeline. This will be 
@@ -85,31 +94,10 @@ median(total.reads) # The median read number is 66,966
 range(total.reads) # The range of reads in samples is from 39,993-101,514 total reads.
 
 
-# The metadata divides samples into 6 groups based on the 2 experimental groups and 3 timepoints. 
-# However experimental treatment (control vs mucin-supplemented) does not happen until the 4 week 
-# timepoint. Thus, Control and Mucin-supplemented samples are identical pre-stress and at 3 weeks
-# post-stress. Because of this, I'll add a "Group" column to the metadata which combines pre-
-# stress and 3 week samples into one group.
-
-ps.mucin@sam_data$Group <- NA
-ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Control Pre" | ps.mucin@sam_data$Condition == "Mucin Pre"] <- "Baseline"
-ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Control 3wk" | ps.mucin@sam_data$Condition == "Mucin 3wk "] <- "3 Wk Stress"
-ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Control 4wk"] <- "Stress Alone"
-ps.mucin@sam_data$Group[ps.mucin@sam_data$Condition == "Mucin 4wk"] <- "Stress + Mucin"
-
-ps.mucin@sam_data$Group <- factor(ps.mucin@sam_data$Group, 
-                                  levels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin"))
-
-
 # Before I perform downstream analyses, I'll first convert the data into relative abundances and
 # order the sample groups.
 
-ps.mucin@sam_data$Condition <- factor(ps.mucin@sam_data$Condition, levels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"))
 ps.mucin.prop <- transform_sample_counts(ps.mucin, function(ASV) ASV/sum(ASV)) 
-
-
-
-ps.mucin@sam_datafactor(ps.mucin@sam_data$Condition, levels = c("Control Pre", "Mucin Pre", "Control 3wk", "Mucin 3wk ", "Control 4wk", "Mucin 4wk"))
 
 
 

@@ -1,0 +1,127 @@
+---
+title: "Untitled"
+output: html_document
+---
+``` {r setup, include = FALSE}
+#### PACKAGES ################################################
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#  install.packages("BiocManager")
+#BiocManager::install()
+packageVersion("BiocManager") # I'm using version 1.30.16
+
+#BiocManager::install("phyloseq")
+library(phyloseq)
+packageVersion("phyloseq") # I'm using version 1.38.0
+
+#install.packages("tidyverse")
+library(tidyverse)
+packageVersion("tidyverse") # I'm using version 1.3.1
+
+#install.packages("ggplot2")
+library(ggplot2)
+packageVersion("ggplot2") # I'm using version 3.3.5
+
+#BiocManager::install("microbiome")
+library(microbiome) 
+packageVersion("microbiome") # I'm using version 1.16.0
+
+#install.packages("vegan")
+library(vegan)
+packageVersion("vegan") # I'm using version 2.5.7
+
+#install.packages("caret")
+library(caret)
+packageVersion("caret") # I'm using version 6.0.90
+
+#install.packages("randomForest")
+library(randomForest)
+packageVersion("randomForest") # I'm using version 4.6.14
+
+#install.packages("pROC")
+library(pROC)
+packageVersion("pROC") # I'm using version 1.18.0
+```
+### Summary of Results
+
+<br><br>
+
+### Introduction
+
+
+<br><br>
+
+### Characterization of the Data Set
+Overall, there are 71 samples in this experiment. Samples were divided into two groups (Control and Mucin-supplemented) and three different timepoints (pre-stress, 3 weeks post-stress, and 4 weeks post-stress). Importantly, Mucin treatment does not start until Week 4, so Control and Mucin-supplemented groups are identical at baseline and 3 weeks post-stress. There are 12 mice for each group/timepoint, but Sample #167 was removed due to low read counts, giving our 71 samples.
+
+Below are a general overview of the total number of reads in the data set, the meaan and median number of reads/sample, and the range of reads across this data set.
+
+<br>
+
+```{r include = FALSE}
+load(file = "/Users/brettmoreau/Documents/Github/Gautier-TUMI-Pilot-16S/results/phyloseq objects by experiment.RData")
+
+total.reads <- sample_sums(ps.mucin)
+```
+
+```{r}
+sum(total.reads)
+mean(total.reads) 
+median(total.reads)
+range(total.reads) 
+```
+<br><br><br>
+
+### Alpha Diversity 
+I'll first investigate alpha diversity, which examines diversity within a given sample. Alpha diversity consists of two major measures:
+
+* **Richness**: the number of taxonomic groups within a given sample.
+
+* **Evenness**: how evenly abundances of taxonomic groups are distributed in a given sample.
+<br>
+
+The DADA2 pipeline removes singlets (sequences detected only once) and doublets (sequences detected twice) from the data set, as it does not have enough confidence to determine whether these sequences are real or artifacts. Because of this, measures of richness fail explicitly and are difficult to interpret. I'll focus mainly on measures of evenness but give measures of richness a glance to see if there are any major differences.
+
+```{r echo = FALSE}
+plot_richness(ps.mucin, x = "Group", measures = c("Observed"), 
+              color = "Group") + 
+  geom_point() +
+  geom_boxplot() + 
+  theme_bw() +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_blank()) +
+  scale_color_discrete(name = "Group", 
+                       breaks = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin"), 
+                       labels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin")) 
+
+
+richness <- estimate_richness(ps.mucin)
+pairwise.wilcox.test(richness$Observed, p.adjust.method = "bonferroni", sample_data(ps.mucin)$Group)
+
+```
+<br>
+
+There are no major differences in alpha diversity between groups.
+
+
+
+```{r echo = FALSE}
+# First I'll organize the data.
+sample.data.mucin <- ps.mucin@sam_data
+sample.data.mucin <- cbind("Sample.Names" = rownames(sample.data.mucin), sample.data.mucin)
+
+evenness<- evenness(ps.mucin, index = c("pielou"))
+evenness<- cbind("Sample.Names" = rownames(evenness), evenness)
+
+sample.data.mucin <- full_join(sample.data.mucin, evenness, by = "Sample.Names")
+
+
+### PIELOU ###
+ggplot(sample.data.mucin, aes(x = Group, y = pielou, color = Group)) +
+  geom_point() +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title = "Microbial Evenness Across Groups", x = NULL, y = "Pielou Eveness Index")
+  theme(legend.position = "none")
+
+pairwise.wilcox.test(evenness$pielou, p.adjust.method = "bonferroni", sample_data(ps.mucin)$Group)
+```

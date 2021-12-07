@@ -154,6 +154,7 @@ ggplot(sample.data.mucin, aes(x = Group, y = pielou, color = Group)) +
   geom_point() +
   geom_boxplot() +
   theme_bw() +
+  labs(title = "Microbial Evenness Across Groups", x = NULL, y = "Pielou Eveness Index")
   theme(legend.position = "none")
 
 ggsave("./results/figures/mucin/Mucin Experiment_evenness_pielou.png", width = 5, height = 4)

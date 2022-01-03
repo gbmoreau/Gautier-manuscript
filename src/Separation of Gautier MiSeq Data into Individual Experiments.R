@@ -61,8 +61,10 @@ ps <- prune_samples(sample_names(ps) != "167-20210603", ps)
 
 
 #### SEPARATION OF DIFFERENT EXPERIMENTS FROM THE PHYLOSEQ OBJECT ###############################
-# There are six experiments in this MiSeq run. I will separate the phyloseq object into its
-# individual experiments based on the experiment metadata.
+# There are six experiments in this MiSeq run. The two I'm primarily interested in are a Stress
+# experiment and a Stress + Mucin supplementation experiment performed by Courtney Rivet-Noor. I'll
+# separate samples for these two experiments from the overall phyloseq object based on the 
+# experiment metadata.
 
 
 # Experiment 1: Naive vs Stress mice: changes in microbiota

@@ -108,8 +108,6 @@ ggsave("./results/figures/Quality_Profile_reverse_reads.png", width = 5, height 
 filtFs <- file.path("./data/filtered_reads", paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path("./data/filtered_reads", paste0(sample.names, "_R_filt.fastq.gz"))
 
-getwd()
-
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
                      truncLen = c(160,150),
                      trimLeft = c(15,10),

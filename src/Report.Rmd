@@ -1,8 +1,15 @@
-#### ANALYSIS OF MUCIN SUPPLEMENTATION EXPERIMENT FOR GAUTIER PILOT #################################
-# NAME: G. Brett Moreau
-# DATE: November 11, 2021
-
-#### PACKAGES ######################################################################################
+---
+title: Mucin Supplementation Analysis Report
+author: "G. Brett Moreau"
+date: "December 15, 2021"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+``` {r setup, include = FALSE}
+#### PACKAGES ################################################
 #if (!requireNamespace("BiocManager", quietly = TRUE))
 #  install.packages("BiocManager")
 #BiocManager::install()
@@ -39,78 +46,60 @@ packageVersion("randomForest") # I'm using version 4.6.14
 #install.packages("pROC")
 library(pROC)
 packageVersion("pROC") # I'm using version 1.18.0
+```
+### Summary of Results
 
+* There were no differences in richness between samples, but evenness was increased in 4 week samples (both Stress Alone and Stress + Mucin) compared to earlier samples.
 
-#### INTRODUCTION ##################################################################################
-# The Gautier TUMI pilot project is focused on investigating changes in the intestinal microbiome 
-# of mice with depressive phenotypes as well as the impact of mucin degradation on this process.
-# Sample reads have been processed using the DADA2 pipeline and organized into individual 
-# experiments. For this analysis I'll focus on the Mucin Supplementation experiment, which 
-# investigates the effect of mucin supplementation on the microbiome after stress treatment.
+* Differences in beta diversity were observed between all groups, particularly between samples collected at four weeks and samples collected at earlier timepoints.
 
+* Phylum- and Family-level community composition changes were observed across groups. Several Families (including *Lactobacillaceae* and *Muribaculaceae*) were changed between Baseline and 3 week stress conditions, while a couple (*Rikenellaceae* and *Marinifilaceae*) were changed between Stress Alone and Stress + Mucin conditions.
 
+* 
+<br>
 
+### Introduction
+The purpose of this experiment is to investigate the microbiome of stressed mice whose diet has or has not been supplemented  with mucin. Behavioral experiments have observed some changes in stress behavior after mucin supplementation. Because of 
 
-#### LOAD PHYLOSEQ OBJECT ##########################################################################
-# I'll start by loading the initial phyloseq object generated after the DADA2 pipeline. This will be 
-# used for analysis.
+<br>
 
-#setwd("..") # I need to set the working directory up one to the parent directory for the code to 
-# work properly. If this has been done previously during the same session then this step should be 
-# skipped, or the working directory will be moved out of the parent directory.
+### Characterization of the Data Set
+There are 71 samples in this experiment. Samples were divided into two groups (Control and Mucin-supplemented) and three different timepoints (pre-stress, 3 weeks post-stress, and 4 weeks post-stress). Four week samples are broken into two groups: Stress Alone, which is the control group, and Stress + Mucin, which is has a diet supplemented with 5% mucin.  There are 24 mice at Baseline and 3 Weeks Stress,  12 mice for Stress Alone, and 11 mice for Stress + Mucin (Sample #167 was removed due to low read counts), giving our 71 samples.
+<br>
 
-load(file = "./results/phyloseq objects by experiment.RData")
+Below is a general overview of the total number of reads in the data set, the mean and median number of reads/sample, and the range of reads across this data set.
+<br>
 
-# For this analysis, I'll be focusing on the Mucin Supplementation mice experiment (ps.mucin), so I'll
-# remove other objects from the environment.
-
-rm(ps.stress)
-
-# We're now ready to start analysis of the data.
-
-
-
-
-#### CHARACTERIZATION OF THE DATA SET ##############################################################
-# Before I move on, I'll first characterize the data set as a whole
-
-View(ps.mucin@sam_data)
-
-# Overall, there are 71 samples in this experiment. Samples were divided into two groups (Control and 
-# Mucin-supplemented) and three different timepoints (pre-stress, 3 weeks post-stress, and 4 weeks
-# post-stress). Importantly, Mucin treatment does not start until Week 4, so Control and Mucin-
-# supplemented groups are identical at baseline and 3 weeks post-stress. There are 12 mice for each 
-# group/timepoint, but Sample #167 was removed due to low read counts, giving our 71 samples.
-
-dim(ps.mucin@otu_table) # From these 71 samples, there were 1795 unique ASVs.
-
-total.reads <- sample_sums(ps.mucin)
-
-sum(total.reads) # There are a total of 4,784,563 reads across the 71 samples in the data set.
-mean(total.reads) # The average read number is 67,388
-median(total.reads) # The median read number is 66,966
-range(total.reads) # The range of reads in samples is from 39,993-101,514 total reads.
-
-
-# Before I perform downstream analyses, I'll first convert the data into relative abundances and
-# order the sample groups.
+```{r include = FALSE}
+load(file = "/Users/gbm5pn/Documents/GitHub/Gautier-TUMI-Pilot-16S/results/phyloseq objects by experiment.RData")
 
 ps.mucin.prop <- transform_sample_counts(ps.mucin, function(ASV) ASV/sum(ASV)) 
 
+total.reads <- sample_sums(ps.mucin)
+```
 
+```{r}
+sum(total.reads)
+mean(total.reads) 
+median(total.reads)
+range(total.reads) 
+```
 
+<br>
 
-#### ALPHA DIVERSITY #############################################################################
-# I'll first look at alpha diversity. The DADA2 pipeline removes singlets (sequences detected only
-# once) and doublets (sequences detected twice) from the data set, as it does not have enough 
-# confidence to determine whether these sequences are real or artifacts. Because of this, measures
-# of richness (how many ASVs are present in a sample) fail explicitly. I'll focus mainly on 
-# measures of evenness but give measures of richness a glance to see if there are any major 
-# differences.
+### Alpha Diversity 
+I'll first investigate alpha diversity, which examines diversity within a given sample. Alpha diversity consists of two major measures:
 
-### RICHNESS ###
-# I'll look at the number of Observed ASVs as my measure of richness.
+* **Richness**: the number of taxonomic groups within a given sample.
 
+* **Evenness**: how evenly abundances of taxonomic groups are distributed in a given sample.
+<br>
+
+The DADA2 pipeline removes singlets (sequences detected only once) and doublets (sequences detected twice) from the data set, as it does not have enough confidence to determine whether these sequences are real or artifacts. Because of this, measures of richness fail explicitly and are difficult to interpret. I'll focus mainly on measures of evenness but give measures of richness a glance to see if there are any major differences.
+<br><br>
+
+#### Richness
+```{r echo = FALSE}
 plot_richness(ps.mucin, x = "Group", measures = c("Observed"), 
               color = "Group") + 
   geom_point() +
@@ -123,20 +112,17 @@ plot_richness(ps.mucin, x = "Group", measures = c("Observed"),
                        labels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin")) 
 
 
-ggsave("./results/figures/mucin/Mucin Experiment_richness_observed.png", width = 5, height = 4)
-
-# There don't appear to be any large changes in richness between groups. I'll perform a paired Wilcoxon test
-# to confirm.
-
 richness <- estimate_richness(ps.mucin)
 pairwise.wilcox.test(richness$Observed, p.adjust.method = "bonferroni", sample_data(ps.mucin)$Group)
 
-# There are no significant differences between any of the groups looking at Observed ASVs.
+```
+<br>
 
+There are no major differences in alpha diversity between groups.
+<br><br>
 
-# I'll focus more on evenness, which are more robust to noise from rare sequence varients and 
-# can be interpreted using this pipeline. I'll use Pielou's Evenness as my evenness measure.
-
+#### Evenness
+```{r echo = FALSE}
 # First I'll organize the data.
 sample.data.mucin <- ps.mucin@sam_data
 sample.data.mucin <- cbind("Sample.Names" = rownames(sample.data.mucin), sample.data.mucin)
@@ -154,33 +140,25 @@ ggplot(sample.data.mucin, aes(x = Group, y = pielou, color = Group)) +
   theme_bw() +
   labs(title = "Microbial Evenness Across Groups", x = NULL, y = "Pielou Eveness Index")
   theme(legend.position = "none")
+```
+<br>
 
-ggsave("./results/figures/mucin/Mucin Experiment_evenness_pielou.png", width = 5, height = 4)
+Baseline and 3 Week Stress samples look similar to each other, while 4 week samples (Stress Alone and Stress + Mucin) appear to have higher evenness . A Pairwise Wilcoxon Rank Sum Test with Bonferroni correction from multiple comparisons was performed to test for differences between groups.
+<br>
 
-# Overall, there doesn't appear to be a whole lot of separation in evenness between groups, 
-# although there is a good amount of spread in the data. It does appear that evenness trends
-# upwards around 4 weeks in both the Control and Mucin-supplemented group. Now I'll look 
-# for statistical differences.
-
-
+```{r echo = FALSE}
 pairwise.wilcox.test(evenness$pielou, p.adjust.method = "bonferroni", sample_data(ps.mucin)$Group)
+```
+<br>
 
-# Significant differences are mainly between 4 week samples and all other samples. The 
-# Control samples (Stress Alone) at 4 weeks are significantly different from Baseline 
-# (p=0.0023) and 3 weeks (p=0.0005). The Mucin samples (Stress + Mucin) at 4 weeks are 
-# significantly different from Baseline (p=0.0023) and 3 weeks (p=0.0011). Control and 
-# Mucin samples at 4 weeks were not significantly different from each other.
+There was no significant difference in evenness between Baseline and 3 Week Stress samples. However, both 4 week samples (Stress Alone and Stress + Mucin) were significantly higher than either Baseline or 3 Week Stress groups. No significant difference in evenness was observed between Stress Alone and Stress + Mucin groups.
 
-# Overall, this suggests that samples at 4 weeks show more evenness than those pre-stress
-# or after 3 weeks stress.
+<br>
 
+### Beta Diversity
+I'll now investigate differences in beta diversity, or diversity between different samples in the experiment. I'll use Bray-Curtis Dissimilarity as my measure for beta diversity in this study, and I'll use Non-metric Multidimensional Scaling (NMDS) to visualize dissimilarity distances between samples.
 
-
-
-#### BETA DIVERSITY: BRAY-CURTIS DISSIMILARITY  #####################################################
-# I'll now move on to measures of beta diversity, which investigates variation between samples.
-# I'll start by looking at Bray-Curtis Dissimilarity.
-
+``` {r include = FALSE}
 #sample(1:1000, 1) # It selected 966
 set.seed(966) # Set seed for reproducibility
 
@@ -188,7 +166,9 @@ set.seed(966) # Set seed for reproducibility
 # separation between different samples.
 
 ord.nmds.bray <- ordinate(ps.mucin.prop, method = "NMDS", distance = "bray")
+```
 
+```{r echo = FALSE}
 plot_ordination(ps.mucin.prop, ord.nmds.bray, color = "Group", 
                 title = "Bray-Curtis Dissimilarity") +
   theme_bw() +
@@ -197,17 +177,16 @@ plot_ordination(ps.mucin.prop, ord.nmds.bray, color = "Group",
                        breaks = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin"), 
                        labels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin")) +
   theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
+```
+<br>
 
-ggsave("./results/figures/mucin/Mucin Experiment_beta_diversity_bc.png", width = 4, height = 4)
+Looking at the clustering, it appears that groups cluster distinctly from each other. Baseline and 3 Week Stress groups are relatively similar to each other, and 4 week samples (Stress Alone and Stress + Mucin) are relatively similar to each other. Baseline and 3 Week samples are quite distinct from 4 week samples.
+<br>
 
+I'll now use ADONIS to calculate statistical differences between groups.
+<br>
 
-# Bray-Curtis distance is ordinated using Non-metric multidimensional scaling (NMDS). Based on the
-# plot, it echos the results of our evenness measure, which found differences between 4 week samples
-# and all other samples. In addition, all 3 timepoints appear to be clustering independently, with
-# 4 week experimental conditions (Control vs Mucin-supplemented) separating from each other, as well.
-
-# I'll perform a PERMANOVA to look statistically if there are any differences in clustering between groups.
-
+```{r include = FALSE}
 adonis(distance(ps.mucin.prop, method = "bray") ~sample_data(ps.mucin.prop)$Group)
 
 # The PERMANOVA found significant differences in clustering (p = 0.001), but this doesn't specifiy
@@ -230,53 +209,21 @@ permanova.FDR.bray <- p.adjust(permanova.p.bray, method = "bonferroni")
 permanova.bray.table <- cbind(combinations, permanova.p.bray)
 permanova.bray.table <- cbind(permanova.bray.table, permanova.FDR.bray)
 
-View(permanova.bray.table)
+```
 
-# According to the pairwise comparisons of the PERMANOVA, all groups are significantly different
-# from each other (FDR-adjusted p value = 0.006). This is consistent with initial impressions 
-# of the plot when looking by eye.
+```{r echo = FALSE}
+library(knitr)
+kable(permanova.bray.table)
+```
+<br>
+The PERMANOVA data confirms the initial impressions from the NMDS plot: All groups cluster separately from each other and are statistically significant from every other group.
 
+<br>
 
+### Changes in Community Composition
+There appear to be some broad differences in diversity between groups. I'll now see if this is reflected by any broad changes in community composition across groups. I'll start by looking at the phylum level, then move on to differences at the Family level. This analysis will focus on taxa that make up at least 1% of the relative abundance in at least one group.
 
-
-#### BETA DIVERSITY: UNWEIGHTED UNIFRAC #############################################################
-# I'll also look at unweighted Unifrac, another measure of beta diversity. While Bray-Curtis 
-# dissimilarity looks only at counts between samples, Unifrac looks at both counts and differences in 
-# phylogeny between samples, so we'll need to add some taxonomic information.
-
-random_tree <- ape::rtree(ntaxa(ps.mucin.prop), rooted = TRUE, tip.label = taxa_names(ps.mucin.prop))
-samples.out <- rownames(seqtab.nochim)
-ps.mucin.prop <- merge_phyloseq(ps.mucin.prop, samples.out, random_tree)
-
-unifrac_dist <- phyloseq::distance(ps.mucin.prop, method = "unifrac", weighted = FALSE)
-ordination <- ordinate(ps.mucin.prop, method = "PCoA", distance = unifrac_dist)
-
-plot_ordination(ps.mucin.prop, ordination, color = "Group") + 
-  theme_bw() +
-  scale_color_manual(name = "Group", 
-                     values = c("#941650", "#1c7798", "#521b92", "#4d8e00"),
-                     breaks = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin"), 
-                     labels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin")) +
-  labs(title = "Unweighted Unifrac Distance") +
-  theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
-
-ggsave("./results/figures/mucin/Mucin Experiment_beta_diversity_unifrac.png", width = 6, height = 6)
-
-
-# Unweighted Unifrac distance is ordinated using Principal Coordinate Analysis (PCoA). The trends
-# here are similar: all timepoints (Baseline, 3 weeks, and 4 weeks) appear to separate from each
-# other, with 4 weeks samples being distinct from the others. In addition, Control and Mucin-
-# supplemented samples appear to be separate from each other.
-
-
-
-
-### COMMUNITY COMPOSITION: PHYLUM LEVEL #############################################################
-# There appear to be some broad differences in diversity between groups. I'll now see if this is
-# reflected by any broad changes in community composition across groups. I'll start by looking at
-# the phylum level, looking at all phyla that make up at least 1% of the relative abundance in at
-# least one group.
-
+```{r include = FALSE}
 ps.mucin.prop.phylum <- tax_glom(ps.mucin.prop, "Phylum", NArm = FALSE)
 phylum.table.mucin <- psmelt(ps.mucin.prop.phylum) # Organize in long format for ggplot.
 
@@ -349,28 +296,22 @@ summarized.abundance.phylum.remainders.only.summary <- summarized.abundance.phyl
 
 summarized.abundance.phylum.figure <- rbind(summarized.abundance.phylum.no.remainder, summarized.abundance.phylum.remainders.only.summary)
 summarized.abundance.phylum.figure$Phylum <- factor(summarized.abundance.phylum.figure$Phylum, levels = c("Bacteroidota", "Firmicutes", "Verrucomicrobiota", "Phyla < 1%"))
-                                                                                                          
+
+```
+#### Phylum-level Community Composition
+```{r echo = FALSE}
 ggplot(summarized.abundance.phylum.figure, aes(x = Group, y = Total.Relative.Abundance, fill = Phylum)) +
   geom_bar(stat = "identity") +
   labs(title = "Community Composition (Phylum Level)", x = NULL, y = "Relative Abundance (%)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
+```
+<br>
 
+At the Phylum level, samples are dominated by members of the *Bacteroidota* and *Firmicutes* phyla. There is a general trend of relative decreased abundance in *Firmicutes* and relative increased abundance of *Bacteroidota* over the course of the experiment.
+<br><br>
 
-ggsave("./results/figures/mucin/Mucin Experiment_community_composition_phylum.png", width = 6, height = 4)
-
-# At the Phylum level, samples are dominated by members of the Bacteroidota and Firmicutes phyla. 
-# There is a general trend of relative decreased abundance in Firmicutes and relative increased 
-# abundance of Bacteroidota over the course of the experiment.
-
-
-
-
-
-### COMMUNITY COMPOSITION: FAMILY LEVEL #############################################################
-# There appear to be some differences at the phylum level. I'll now look at the family level to see
-# how these differences are reflected here.
-
+```{r include = FALSE}
 ps.mucin.prop.family <- tax_glom(ps.mucin.prop, "Family", NArm = FALSE)
 family.table.mucin <- psmelt(ps.mucin.prop.family) # Organize in long format for ggplot.
 
@@ -444,27 +385,27 @@ summarized.abundance.family.figure <- rbind(summarized.abundance.family.no.remai
 summarized.abundance.family.figure$Family <- factor(summarized.abundance.family.figure$Family, levels = c("[Eubacterium] coprostanoligenes group", "Acholeplasmataceae", "Akkermansiaceae", "Clostridiaceae", "Erysipelotrichaceae", "Lachnospiraceae", 
                                                                                                           "Lactobacillaceae", "Marinifilaceae", "Muribaculaceae", "Oscillospiraceae", "Peptostreptococcaceae", "Rikenellaceae", "Ruminococcaceae", 
                                                                                                           "Unidentified", "Families < 1%"))
+```
+<br>
+
+#### Family-Level Community Composition
+
+```{r echo = FALSE}
 
 ggplot(summarized.abundance.family.figure, aes(x = Group, y = Total.Relative.Abundance, fill = Family)) +
   geom_bar(stat = "identity") +
   labs(title = "Community Composition (Family Level)", x = NULL, y = "Relative Abundance (%)") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
+```
+
+Several Families are abundant across all groups, with the most abundant families including *Lachnospiraceae* and *Muribaculaceae*. I'll directly compare relative abundances of these families between groups of interest (Baseline vs.3 Week Stress and Stress Alone vs. Stress + Mucin).
+<br>
+
+#### Baseline vs. 3 Week Stress
 
 
-ggsave("./results/figures/mucin/Mucin Experiment_community_composition_family.png", width = 6, height = 4)
-
-# Several Families are abundant across all groups, with the most abundant families including 
-# Lachnospiraceae and Muribaculaceae. Of note, the Lactobacillus family was relatively increased at
-# Baseline relative to all stressed conditions, which is consistent with previous results from the
-# group. 
-
-# I'll directly compare relative abundances of these families between groups of interest (Baseline vs.
-# 3 Week Stress and Stress Alone vs. Stress + Mucin).
-
-
-
-
+```{r include = FALSE}
 #### FAMILY LEVEL DIFFERENCES: BASELINE VS 3 WEEK STRESS ############################################
 # I now want to plot these differences by Family group. I'll only be plotting the abundant families
 # (those with a relative abundance above 1% in at least one Group). I'll start by taking the family
@@ -484,10 +425,9 @@ family.table.mucin.abundant.stress <- filter(family.table.mucin.abundant.stress,
 family.table.mucin.abundant.stress$Family <- factor(family.table.mucin.abundant.stress$Family, levels = c("[Eubacterium] coprostanoligenes group", "Acholeplasmataceae", "Akkermansiaceae", 
                                                                                                           "Clostridiaceae", "Erysipelotrichaceae", "Lachnospiraceae", "Lactobacillaceae", 
                                                                                                           "Muribaculaceae", "Oscillospiraceae", "Peptostreptococcaceae", "Ruminococcaceae"))
+```
 
-# I'll now plot abundance for each sample. Abundances are expressed as a percentage of each sample,
-# so I'll format the x axis as a percentage.
-
+```{r echo = FALSE}
 ggplot(family.table.mucin.abundant.stress, aes(x = Abundance, y = Family, color = Group)) +
   geom_boxplot() +
   theme_bw() +
@@ -499,10 +439,10 @@ ggplot(family.table.mucin.abundant.stress, aes(x = Abundance, y = Family, color 
                      labels = c("Baseline", "3 Wk Stress")) +
   labs(title = "Family Abundance (Baseline vs. 3 Week Stresss)", x = "Relative Abundance", y = NULL) +
   theme(plot.title = element_text(hjust = 0.5))
- 
-ggsave("./results/figures/mucin/Mucin Experiment_family abundance_mucin.png", width = 6, height = 5)
+```
 
 
+``` {r include = FALSE}
 ### SIGNIFICANT DIFFERENCES: BASELINE VS. 3 WK STRESS ###
 # I'll now use a Wilcoxon rank test to look for significant differences between each of these Family 
 # groups. First, I'll organize the data so that abundance per Family is summarized on a per sample 
@@ -638,10 +578,6 @@ Wilcox.Baseline.3wk <- plyr::rename(Wilcox.Baseline.3wk, replace = c("Wilcox.Fam
                                                                      "Wilcox.pvalues" = "Raw p value",
                                                                      "Wilcox.pvalues.Bonferonni" = "Bonferroni-adjusted p value"))
 
-write.csv(Wilcox.Baseline.3wk, file = "./results/tables/mucin/Wilcoxon Rank Comparison_Baseline vs 3Wk Abundance.csv")
-
-
-
 
 #### FAMILY LEVEL DIFFERENCES: STRESS ALONE VS STRESS + MUCIN ########################################
 # Now I'll repeat this process, comparing the 4 week samples. I want to see if there are any major
@@ -656,10 +592,34 @@ family.table.mucin.abundant.mucin$Family <- factor(family.table.mucin.abundant.m
                                                                                                         "Clostridiaceae", "Erysipelotrichaceae", "Lachnospiraceae", "Lactobacillaceae", 
                                                                                                         "Marinifilaceae", "Muribaculaceae", "Oscillospiraceae", "Rikenellaceae", 
                                                                                                         "Ruminococcaceae"))
+```
 
-# I'll now plot abundance for each sample. Abundances are expressed as a percentage of each sample,
-# so I'll format the x axis as a percentage.
+```{r echo = FALSE}
+knitr::kable(Wilcox.Baseline.3wk)
+```
 
+Statistically significant differences were observed in the following families: *Eubacterium*, *Acholeplasmataceae*, *Clostridiaceae*, *Lactobacillaceae*, *Muribaculaceae*, *Peptostreptococcaceae*, and *Ruminococcaceae*. Of these Families, *Muribaculaceae* and *Lactobacillaceae* make up the largest proportion of the microbiota. Of note, *Lactobacillaceae* was lower in the stressed group relative to baseline, which is consistent with previous experiments.
+<br>
+
+#### Stress Alone vs. Stress + Mucin
+```{r include = FALSE}
+#### FAMILY LEVEL DIFFERENCES: STRESS ALONE VS STRESS + MUCIN ########################################
+# Now I'll repeat this process, comparing the 4 week samples. I want to see if there are any major
+# differences in families between the Control group (Stress Alone) and the Mucin-supplemented group
+# (Stress + Mucin). I'll filter to include only these samples.
+
+family.table.mucin.abundant.mucin <- filter(family.table.mucin.abundant, Group == "Stress Alone" | Group == "Stress + Mucin")
+family.table.mucin.abundant.mucin$Group <- factor(family.table.mucin.abundant.mucin$Group, levels = c("Stress Alone", "Stress + Mucin"))
+
+family.table.mucin.abundant.mucin <- filter(family.table.mucin.abundant.mucin, Family != "Peptostreptococcaceae")
+family.table.mucin.abundant.mucin$Family <- factor(family.table.mucin.abundant.mucin$Family, levels = c("[Eubacterium] coprostanoligenes group", "Acholeplasmataceae", "Akkermansiaceae", 
+                                                                                                        "Clostridiaceae", "Erysipelotrichaceae", "Lachnospiraceae", "Lactobacillaceae", 
+                                                                                                        "Marinifilaceae", "Muribaculaceae", "Oscillospiraceae", "Rikenellaceae", 
+                                                                                                        "Ruminococcaceae"))
+
+```
+
+```{r echo = FALSE}
 ggplot(family.table.mucin.abundant.mucin, aes(x = Abundance, y = Family, color = Group)) +
   geom_boxplot() +
   theme_bw() +
@@ -670,10 +630,10 @@ ggplot(family.table.mucin.abundant.mucin, aes(x = Abundance, y = Family, color =
                      breaks = c("Stress Alone", "Stress + Mucin"), 
                      labels = c("Stress Alone", "Stress + Mucin")) +
   labs(x = "Relative Abundance", y = NULL) 
+```
 
-ggsave("./results/figures/mucin/Mucin Experiment_family abundance_stress.png", width = 6, height = 5)
 
-
+```{r include = FALSE}
 ### SIGNIFICANT DIFFERENCES: STRESS ALONE VS. STRESS + MUCIN ###
 # I'll now use a Wilcoxon rank test to look for significant differences between each of these Family 
 # groups. First, I'll organize the data so that abundance per Family is summarized on a per sample 
@@ -817,94 +777,21 @@ Wilcox.Control.Mucin <- as.data.frame(Wilcox.Control.Mucin)
 Wilcox.Control.Mucin <- plyr::rename(Wilcox.Control.Mucin, replace = c("Wilcox.Families" = "Family",
                                                                      "Wilcox.pvalues" = "Unadjusted p value",
                                                                      "Wilcox.pvalues.Bonferonni" = "Bonferroni-adjusted p value"))
+```
 
-write.csv(Wilcox.Control.Mucin, file = "./results/tables/mucin/Wilcoxon Rank Comparison_Control vs Mucin Abundance.csv")
+```{r echo = FALSE}
+knitr::kable(Wilcox.Control.Mucin)
+```
 
+The *Rikenellaceae* and *Marinifilaceae* families were significantly different between Stress Alone and Stress + Mucin groups after correction for multiple comparisons. *Clostridiaceae* and *Lachnospiraceae* were different before adjustment for multiple comparisons. Of note, *Lactobacillaceae* was not significantly different between groups, indicating that Mucin supplementation is acting in a *Lactobacillaceae*-independent manner.
 
+<br>
 
+### Selection of ASVs that Distinguish Between Groups
+I've broadly looked at differences in diversity and community composition with the Mucin Supplementation experiment for the Gautier TUMI Pilot. # I'll now move on to identify ASVs that best discriminate between groups. There are two comparisons we are interested in for this experiment:
+## 1) Baseline (n=24) vs. 3 Wk Stress samples (n=24)
+## 2) Stress only (n=12) vs. Stress + Mucin (n=11)
 
-#### COMMUNITY COMPOSITION: ORDER LEVEL #############################################################
-# The Gautier lab also wanted to see what relative abundances looked like at the order level. I'll
-# now calculate relative abundance values for each order level taxa and organize it into a table.
-# For this analysis I won't be grouping Orders that are less than 1% relative abundance together.
-# I'll also be using the "Group" column to generate relative abundance.
+```{r include = FALSE}
 
-
-ps.mucin.prop.order <- tax_glom(ps.mucin.prop, "Order", NArm = FALSE)
-order.table <- psmelt(ps.mucin.prop.order) # Organize in long format for ggplot.
-
-table(ps.mucin.prop@sam_data$Group) # There are 24 samples for "Baseline" and "3 Wk Stress" groups, 12
-# samples for the "Stress Alone" group, and 11 samples for the "Stress + Mucin" group. I'll 
-# separate these groups to generate relative abundances as a percentage by dividing by the total
-# number of samples in each group.
-
-order.table.mucin.baseline.3wk <- filter(order.table, Group == "Baseline" | Group == "3 Wk Stress")
-order.table.mucin.baseline.3wk$Relative.Abundance <- NA
-order.table.mucin.baseline.3wk$Relative.Abundance <- order.table.mucin.baseline.3wk$Abundance / 24 *100
-
-
-order.table.stress <- filter(order.table, Group == "Stress Alone")
-order.table.stressRelative.Abundance <- NA
-order.table.stress$Relative.Abundance <- order.table.stress$Abundance / 12 *100
-
-
-order.table.stress.mucin <- filter(order.table, Group == "Stress + Mucin")
-order.table.stress.mucinRelative.Abundance <- NA
-order.table.stress.mucin$Relative.Abundance <- order.table.stress.mucin$Abundance / 11 *100
-
-
-order.table.mucin <- rbind(order.table.mucin.baseline.3wk, order.table.stress)
-order.table.mucin <- rbind(order.table.mucin, order.table.stress.mucin)
-
-
-order.table.mucin <- as.data.frame(order.table.mucin)
-
-# First, I'll summarize relative abundance information per taxonomic group.
-summarized.abundance.order <- order.table.mucin %>%
-  group_by(Order, Group) %>%
-  summarize(Total.Relative.Abundance = (sum(Relative.Abundance)))
-
-summarized.abundance.order$Order <- as.character(replace_na(summarized.abundance.order$Order, replace = "Unidentified"))
-
-# Now I'll organize the data out of a wide format, so that relative abundance values for each 
-# condition are their own column.
-
-summarized.abundance.order <- filter(summarized.abundance.order, Total.Relative.Abundance > 0)
-
-summarized.abundance.order.baseline <- filter(summarized.abundance.order, Group == "Baseline")
-summarized.abundance.order.baseline <- plyr::rename(summarized.abundance.order.baseline, replace = c("Total.Relative.Abundance" = "Baseline Relative Abundance (%)"))
-summarized.abundance.order.baseline <- select(summarized.abundance.order.baseline, -Group)
-
-summarized.abundance.order.3wk <- filter(summarized.abundance.order, Group == "3 Wk Stress")
-summarized.abundance.order.3wk <- plyr::rename(summarized.abundance.order.3wk, replace = c("Total.Relative.Abundance" = "3 Wk Stress Relative Abundance (%)"))
-summarized.abundance.order.3wk <- select(summarized.abundance.order.3wk, -Group)
-
-summarized.abundance.order.stress <- filter(summarized.abundance.order, Group == "Stress Alone")
-summarized.abundance.order.stress <- plyr::rename(summarized.abundance.order.stress, replace = c("Total.Relative.Abundance" = "Stress Alone Relative Abundance (%)"))
-summarized.abundance.order.stress <- select(summarized.abundance.order.stress, -Group)
-
-summarized.abundance.order.mucin <- filter(summarized.abundance.order, Group == "Stress + Mucin")
-summarized.abundance.order.mucin <- plyr::rename(summarized.abundance.order.mucin, replace = c("Total.Relative.Abundance" = "Stress + Mucin Relative Abundance (%)"))
-summarized.abundance.order.mucin <- select(summarized.abundance.order.mucin, -Group)
-
-summarized.abundance.order.wide <- full_join(summarized.abundance.order.baseline, summarized.abundance.order.3wk, by = "Order")
-summarized.abundance.order.wide <- full_join(summarized.abundance.order.wide, summarized.abundance.order.stress, by = "Order")
-summarized.abundance.order.wide <- full_join(summarized.abundance.order.wide, summarized.abundance.order.mucin, by = "Order")
-
-summarized.abundance.order.wide <- replace_na(summarized.abundance.order.wide, list("Baseline Relative Abundance (%)" = 0, 
-                                                                                     "3 Wk Stress Relative Abundance (%)" = 0,
-                                                                                     "Stress Alone Relative Abundance (%)" = 0,
-                                                                                     "Stress + Mucin Relative Abundance (%)" = 0))
-
-
-# Get additional taxonomic information
-taxa.order <- order.table.mucin %>%
-  select(Kingdom, Phylum, Class, Order) %>%
-  group_by(Order) %>%
-  slice(1L) %>%
-  ungroup()
-
-summarized.abundance.order.wide <- left_join(summarized.abundance.order.wide, taxa.order, by = "Order")
-summarized.abundance.order.wide <- select(summarized.abundance.order.wide, Kingdom, Phylum, Class, Order, everything())
-
-write.csv(summarized.abundance.order.wide, file = "results/tables/mucin/Order Level Relative Abundance.csv", row.names = FALSE)
+```

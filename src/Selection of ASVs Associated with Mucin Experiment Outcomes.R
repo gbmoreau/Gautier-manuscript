@@ -3,11 +3,6 @@
 # DATE: November 11, 2021
 
 #### PACKAGES ######################################################################################
-#if (!requireNamespace("BiocManager", quietly = TRUE))
-#  install.packages("BiocManager")
-#BiocManager::install()
-packageVersion("BiocManager") # I'm using version 1.30.16
-
 #BiocManager::install("phyloseq")
 library(phyloseq)
 packageVersion("phyloseq") # I'm using version 1.38.0
@@ -19,14 +14,6 @@ packageVersion("tidyverse") # I'm using version 1.3.1
 #install.packages("ggplot2")
 library(ggplot2)
 packageVersion("ggplot2") # I'm using version 3.3.5
-
-#BiocManager::install("microbiome")
-library(microbiome) 
-packageVersion("microbiome") # I'm using version 1.16.0
-
-#install.packages("vegan")
-library(vegan)
-packageVersion("vegan") # I'm using version 2.5.7
 
 #install.packages("caret")
 library(caret)
@@ -43,11 +30,10 @@ packageVersion("pROC") # I'm using version 1.18.0
 
 #### INTRODUCTION ###################################################################################
 # I've broadly looked at differences in diversity and community composition with the Mucin 
-# Supplementation experiment for the Gautier TUMI Pilot. # I'll now move on to identify ASVs that best 
+# Supplementation experiment for the Gautier TUMI Pilot. I'll now move on to identify ASVs that best 
 # discriminate between groups. There are two comparisons we are interested in for this experiment:
 ## 1) Baseline (n=24) vs. 3 Wk Stress samples (n=24)
 ## 2) Stress only (n=12) vs. Stress + Mucin (n=11)
-
 
 # I'll start with the Baseline vs 3 Wk Stress comparison, then move on to the Control vs. Mucin 
 # comparison. I'll be using a Random Forest model to select ASVs that best discriminate between these 
@@ -320,11 +306,11 @@ ggplot(RF.ranking.stress.figure, aes(x = Stress.Mean.Decrease.Gini, y = ASV.Fami
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 
-ggsave("./results/figures/mucin/RF Rankings_Baseline_vs_Stress.png", width = 7, height = 5)
+#ggsave("./results/figures/mucin/RF Rankings_Baseline_vs_Stress.png", width = 7, height = 5)
 
 
 # Print Random Forest importance rankings
-write.csv(RF.ranking.stress, file = "./results/tables/mucin/RF Rankings_Baseline_vs_Stress.csv", row.names = FALSE)
+#write.csv(RF.ranking.stress, file = "./results/tables/mucin/RF Rankings_Baseline_vs_Stress.csv", row.names = FALSE)
 
 
 
@@ -622,11 +608,11 @@ ggplot(RF.ranking.mucin.figure, aes(x = Mucin.Mean.Decrease.Gini, y = ASV.Family
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 
-ggsave("./results/figures/mucin/RF Rankings_Control_vs_Mucin.png", width = 7, height = 5)
+#ggsave("./results/figures/mucin/RF Rankings_Control_vs_Mucin.png", width = 7, height = 5)
 
 
 # Print Random Forest importance rankings
-write.csv(RF.ranking.mucin, file = "./results/tables/mucin/RF Rankings_Control_vs_Mucin.csv", row.names = FALSE)
+#write.csv(RF.ranking.mucin, file = "./results/tables/mucin/RF Rankings_Control_vs_Mucin.csv", row.names = FALSE)
 
 
 
@@ -688,5 +674,5 @@ View(RF.ranking.combined.important)
 # enriched both after 3 Wk Stress and in Stress Alone).
 
 # I'll now print this data set for subsequent analysis.
-write.csv(RF.ranking.combined.important, file = "./results/tables/mucin/RF Rankings_Combined.csv", row.names = FALSE)
+#write.csv(RF.ranking.combined.important, file = "./results/tables/mucin/RF Rankings_Combined.csv", row.names = FALSE)
 

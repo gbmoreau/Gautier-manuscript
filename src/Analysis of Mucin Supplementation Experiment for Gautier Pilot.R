@@ -123,7 +123,7 @@ plot_richness(ps.mucin, x = "Group", measures = c("Observed"),
                        labels = c("Baseline", "3 Wk Stress", "Stress Alone", "Stress + Mucin")) 
 
 
-ggsave("./results/figures/mucin/Mucin Experiment_richness_observed.png", width = 5, height = 4)
+#ggsave("./results/figures/mucin/Mucin Experiment_richness_observed.png", width = 5, height = 4)
 
 # There don't appear to be any large changes in richness between groups. I'll perform a paired Wilcoxon test
 # to confirm.

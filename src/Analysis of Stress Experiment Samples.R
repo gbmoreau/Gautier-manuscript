@@ -3,10 +3,6 @@
 # DATE: November 9, 2021
 
 #### PACKAGES ######################################################################################
-#if (!requireNamespace("BiocManager", quietly = TRUE))
-#  install.packages("BiocManager")
-#BiocManager::install()
-packageVersion("BiocManager") # I'm using version 1.30.16
 
 #BiocManager::install("phyloseq")
 library(phyloseq)
@@ -32,11 +28,9 @@ packageVersion("vegan") # I'm using version 2.5.7
 #### INTRODUCTION ##################################################################################
 # The Gautier TUMI pilot project is focused on investigating changes in the intestinal microbiome 
 # of mice with depressive phenotypes as well as the impact of mucin degradation on this process.
-# Samples were previously run, but the resulting fastq files had generally poor quality and resulted
-# in significant loss of reads throughout the pipeline. Other samples run around the same time also
-# had issues, so we thought this may be a Miseq issue and decided to re-run the samples on the TUMI 
-# MiSeq. The sample library was re-diluted and re-run on the TUMI MiSeq, and these .fastq files will
-# now be run through the DADA2 pipeline.
+# Samples have been run through the DADA2 pipeline and are ready for analysis. This analysis will
+# focus on the Stress experiment, which examined the role of stress on intestinal microbiota
+# diversity and composition.
 
 
 
@@ -67,14 +61,14 @@ rm(ps.mucin)
 View(ps.stress@sam_data)
 
 # Overall, there are 24 samples in this experiment. Samples were divided into two groups (Naive and 
-# Stressed) and two different timepoints (pre- and post-stress intervention) looked at pre- and post-
-# stress. Each treatment group and timepoint is divided into 6 samples each.
+# Stressed) and two different timepoints (pre- and post-stress intervention). Each treatment group 
+# and timepoint is divided into 6 samples each.
 
 dim(ps.stress@otu_table) # From these 24 samples, there were 1795 unique ASVs.
 
 total.reads <- sample_sums(ps.stress)
 
-sum(total.reads) # There are a total of 1,741,609 reads across the 40 samples in the data set.
+sum(total.reads) # There are a total of 1,741,609 reads across the 24 samples in the data set.
 mean(total.reads) # The average read number is 72,567
 median(total.reads) # The median read number is 71,421
 range(total.reads) # The range of reads in samples is from 43,957-117,986 total reads.
@@ -114,7 +108,7 @@ plot_richness(ps.stress, x = "Condition", measures = c("Observed"),
                        labels = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post")) 
 
 
-ggsave("./results/figures/stress/Stress Experiment_richness_observed.png", width = 4, height = 4)
+#ggsave("./results/figures/stress/Stress Experiment_richness_observed.png", width = 4, height = 4)
 
 # None of the groups appear to have signifcant differences between each other regarding richness. 
 # There looks like a small increase in observed ASVs in both Naive and Stressed mice post-
@@ -147,9 +141,10 @@ ggplot(sample.data.stress, aes(x = Condition, y = pielou, color = Condition)) +
   geom_point() +
  geom_boxplot() +
   theme_bw() +
+  labs(title = "Microbial Evenness Across Groups", x = NULL, y = "Pielou Eveness Index") +
   theme(legend.position = "none")
 
-ggsave("./results/figures/stress/Stress Experiment_evenness_pielou.png", width = 4, height = 4)
+#ggsave("./results/figures/stress/Stress Experiment_evenness_pielou.png", width = 4, height = 4)
 
 # Overall, there doesn't appear to be a whole lot of separation in evenness between groups. 
 # There is a lot of spread between individuals within each group, which makes the data a 
@@ -183,7 +178,7 @@ plot_ordination(ps.stress.prop, ord.nmds.bray, color = "Condition",
                        labels = c("Naïve Pre", "Stress Pre", "Naïve Post", "Stress Post")) +
   theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
 
-ggsave("./results/figures/stress/Stress Experiment_beta_diversity_bc.png", width = 5, height = 5)
+#ggsave("./results/figures/stress/Stress Experiment_beta_diversity_bc.png", width = 5, height = 5)
 
 
 # Bray-Curtis distance is ordinated using Non-metric multidimensional scaling (NMDS). It looks like
@@ -244,7 +239,7 @@ plot_ordination(ps.stress.prop, ordination, color = "Condition") +
   labs(title = "Unweighted Unifrac Distance") +
   theme(aspect.ratio = 1, plot.title = element_text(hjust = 0.5)) 
 
-ggsave("./results/figures/stress/Stress Experiment_beta_diversity_unifrac.png", width = 5, height = 5)
+#ggsave("./results/figures/stress/Stress Experiment_beta_diversity_unifrac.png", width = 5, height = 5)
 
 
 # Unweighted Unifrac distance is ordinated using Principal Coordinate Analysis (PCoA). Once again,
@@ -276,7 +271,7 @@ View(permanova.unifrac.table)
 # Pairwise comparisons of PERMANOVA from Unifrac distance found similar results to those seen
 # with Bray-Curtis dissimilarity. Specifically, the Stress Post group was statistically 
 # significant from both pre-intervention groups, as hypothesized. However, it was not significantly
-# different from the Naive Post group.Overall, beta diversity measures found very similar results, 
+# different from the Naive Post group. Overall, beta diversity measures found very similar results, 
 # suggesting that there are some differences between groups.
 
 
@@ -343,7 +338,7 @@ ggplot(summarized.abundance.phylum.figure, aes(x = Condition, y = Total.Relative
   theme_bw() +
   labs(x = NULL, y = "Relative Abundance (%)")
 
-ggsave("./results/figures/stress/stress Experiment_community_composition_phylum.png", width = 5, height = 4)
+#ggsave("./results/figures/stress/stress Experiment_community_composition_phylum.png", width = 5, height = 4)
 
 
 
@@ -410,7 +405,7 @@ ggplot(summarized.abundance.family.figure, aes(x = Condition, y = Total.Relative
   labs(x = NULL, y = "Relative Abundance (%)")
 
 
-ggsave("./results/figures/stress/stress Experiment_community_composition_family.png", width = 6, height = 4)
+#ggsave("./results/figures/stress/stress Experiment_community_composition_family.png", width = 6, height = 4)
 
 
 
@@ -430,7 +425,7 @@ ggplot(family.table.stress.abundant, aes(x = Abundance, y = Family, color = Cond
   scale_y_discrete(limits = rev) +
   labs(x = "Relative Abundance (%)", y = NULL) 
 
-ggsave("./results/figures/stress/stress Experiment_family abundance_stress.png", width = 6, height = 5)
+#ggsave("./results/figures/stress/stress Experiment_family abundance_stress.png", width = 6, height = 5)
 
 
 
@@ -498,71 +493,5 @@ taxa.order <- order.table.stress %>%
 summarized.abundance.order.wide <- left_join(summarized.abundance.order.wide, taxa.order, by = "Order")
 summarized.abundance.order.wide <- select(summarized.abundance.order.wide, Kingdom, Phylum, Class, Order, everything())
 
-write.csv(summarized.abundance.order.wide, file = "results/tables/stress/Order Level Relative Abundance.csv", row.names = FALSE)
-
-
-
-
-#### SELECTION OF ASVs ASSOCIATED WITH STRESS TREATMENT #############################################
-# I'll now move on to identify ASVs that best discriminate between groups. There are two comparisons
-# we are interested in for this experiment:
-## 1) Baseline (n=24) vs. 3 Wk Stress samples (n=24)
-## 2) Stress only (n=12) vs. Stress + Mucin (n=11)
-
-
-# I'll start with the Baseline vs 3 Wk Stress comparison. I'll use a Random Forest model to select
-# features
-
-
-
-
-#### ORGANIZATION OF ASVs FROM VEHICLE AND FMT RECIPIENT SAMPLES ########################################
-# I'll be comparing only the vehicle control and FMT recipient groups for this analysis. I want to first
-# summarize the abundance of each ASV within a given group. I'm only interested in Baseline or 3 Wk 
-# samples, so I'll filter the data set to include only these samples.
-
-ps.mucin.stress.ASV <- subset_samples(ps.mucin, Experiment == "Mucin Therapeutic ")
-ps.mucin@sam_data
-ASV.table.mucin <- psmelt(ps.mucin)
-# I'm only interested 
-
-length(unique(ASV.table.mucin$OTU)) #1795 unique ASVs across all samples.
-
-
-# Here is a summarized table of the abundance of each ASV in the Vehicle control compared to the FMT
-# Recipient group.
-ASV.table.summary <- ASV.table %>%
-  group_by(OTU, experimental_group) %>%
-  summarize(Abundance.per.Group = (sum(Abundance))) %>%
-  filter(experimental_group != "FMT_DONOR") %>%
-  filter(any(Abundance.per.Group > 0)) # Removes any ASVs with an abundance of 0 in both groups.
-
-length(unique(ASV.table.summary$OTU)) # There are a total of 132 unique ASVs in these samples.
-
-unique.ASVs <- as.data.frame(unique(ASV.table.summary$OTU))
-unique.ASVs <- plyr::rename(unique.ASVs, replace = c("unique(ASV.table.summary$OTU)" = "OTU"))
-
-
-# Now I'll make another data set, this time keeping Abundance values for each individual sample.
-ASV.table.samples <- filter(ASV.table, experimental_group != "FMT_DONOR")
-ASV.table.samples <- left_join(unique.ASVs, ASV.table.samples, by = "OTU")
-
-length(unique(ASV.table.samples$OTU)) # 132 unique ASVs as expected.
-
-
-# I'll reshape the data into a wide format for analysis.
-ASV.table.wide <- select(ASV.table.samples, OTU, Sample, Abundance, experimental_group)
-ASV.table.wide <- spread(ASV.table.wide, key = OTU, value = Abundance)
-
-# Now I'll split the data into Vehicle and FMT groups
-ASV.table.wide.Vehicle <- filter(ASV.table.wide, experimental_group == "Vehicle_recipient")
-ASV.table.wide.FMT <- filter(ASV.table.wide, experimental_group == "FMT_Recipient")
-
-
-
-
-### TRAINING AND TEST SET GENERATION: STRESS TREATMENT ###############################################
-
-
-
+#write.csv(summarized.abundance.order.wide, file = "results/tables/stress/Order Level Relative Abundance.csv", row.names = FALSE)
 

@@ -20,18 +20,6 @@ packageVersion("tidyverse") # I'm using version 1.3.1
 library(ggplot2)
 packageVersion("ggplot2") # I'm using version 3.3.5
 
-#BiocManager::install("microbiome")
-library(microbiome) 
-packageVersion("microbiome") # I'm using version 1.16.0
-
-#install.packages("vegan")
-library(vegan)
-packageVersion("vegan") # I'm using version 2.5.7
-
-#install.packages("caret")
-library(caret)
-packageVersion("caret") # I'm using version 6.0.90
-
 #install.packages("randomForest")
 library(randomForest)
 packageVersion("randomForest") # I'm using version 4.6.14
@@ -43,7 +31,7 @@ packageVersion("pROC") # I'm using version 1.18.0
 
 #### INTRODUCTION ###################################################################################
 # I've broadly looked at differences in diversity and community composition with the Stress 
-# experiment for the Gautier TUMI Pilot. # I'll now move on to identify ASVs that best discriminate 
+# experiment for the Gautier TUMI Pilot. I'll now move on to identify ASVs that best discriminate 
 # between groups. This experiment looks at mice before and after Stress treatment, so the major 
 # comparisons will be Naive vs Stressed mice in the Post timepoint and Pre vs. Post timepoints for 
 # the Stressed mice. There are 6 mice/group.
@@ -144,7 +132,7 @@ model.rf.stress.final
 roc(outcome, model.rf.stress.final$votes[,1], plot = TRUE, legacy.axes = TRUE, percent = TRUE, main = "Training Set ROC Curve",
     xlab = "False Positive Percentage", ylab = "True Positive Percentage", col = "#377eb8", lwd = 4, print.auc = TRUE)
 
-# The RF model performs well on training data, with a 94.4% AUC. 
+# The RF model performs well on training data, with a 88.9% AUC. 
 
 
 
@@ -185,7 +173,7 @@ ASV.table.enrichment.stress <- ASV.table.stress %>%
   group_by(OTU, Condition) %>%
   summarize(Average.Abundance.per.Group = (mean(Abundance))) %>%
   filter(any(Average.Abundance.per.Group > 0)) # Removes any ASVs with an abundance of 0 in both groups.
-table(outcome)
+
 
 ASV.enrichment.Naive <- filter(ASV.table.enrichment.stress, Condition == "Naïve Post")
 ASV.enrichment.Naive <- plyr::rename(ASV.enrichment.Naive, replace = c("Average.Abundance.per.Group" = "Naive.Average.Abundance.per.Group"))
@@ -235,7 +223,7 @@ ggplot(RF.ranking.stress.figure, aes(x = Stress.Mean.Decrease.Gini, y = ASV.Fami
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 
-ggsave("./results/figures/stress/RF Rankings_Naive_Post_vs_Stress_Post.png", width = 7, height = 5)
+#ggsave("./results/figures/stress/RF Rankings_Naive_Post_vs_Stress_Post.png", width = 7, height = 5)
 
 
 # Print Random Forest importance rankings
@@ -244,31 +232,12 @@ write.csv(RF.ranking.stress, file = "./results/tables/stress/RF Rankings_Naive_P
 
 
 
-#### RANDOM FOREST MODEL WITH TOP 5 ASVs ONLY #######################################################
-# The top 5 ASVs selected by the random forest model look clearly separated from other ASVs. Because
-# the model descriminates so well between Baseline and 3 Week samples, I want to see whether these 
-# ASVs alone are sufficient to separate groups. To test this, I'll filter only these ASVs for each
-# sample and use this data to generate a new random forest model.
-
-# Set seed for reproducibility
-#sample(1:1000, 1) # It selected 806
-set.seed(806) 
-
-predictors.subset <- select(predictors, ASV232, ASV237, ASV9, ASV313, ASV520)
-
-model.rf.stress.subset <- randomForest(x = predictors.subset, y = outcome, ntree = 1000)
-
-model.rf.stress.subset # The model has a 0% OOB error rate.
-
-
-
-
 #### ORGANIZATION OF ASVs FROM STRESSED PRE VS POST SAMPLES #####################################
 # I'll now look at differences in the Stressed mice Pre-stress vs Post-stress. 
 
 ps.stress.ASV.time <- subset_samples(ps.stress, Condition == "Stress Pre" | Condition == "Stress Post")
-ASV.table.stress.time <- psmelt(ps.stress.ASV)
-
+ASV.table.stress.time <- psmelt(ps.stress.ASV.time)
+View(ASV.table.stress.time)
 length(unique(ASV.table.stress.time$OTU)) #1795 unique ASVs across all samples.
 
 # I want to limit the data set to only ASVs that are present in at least one group. To do this, I'll
@@ -298,7 +267,7 @@ ASV.table.wide.stress.time <- select(ASV.table.samples.stress.time, OTU, Sample,
 ASV.table.wide.stress.time <- spread(ASV.table.wide.stress.time, key = OTU, value = Abundance)
 ASV.table.wide.stress.time$Condition <- factor(ASV.table.wide.stress.time$Condition, levels = c("Stress Pre", "Stress Post"))
 
-
+View(ASV.table.wide.stress.time)
 
 
 ### RANDOM FOREST MODEL GENERATION ##################################################################
@@ -308,7 +277,6 @@ ASV.table.wide.stress.time$Condition <- factor(ASV.table.wide.stress.time$Condit
 # First, I'll separate the data into predictors and outcomes.
 predictors.time <- select(ASV.table.wide.stress.time, -Sample, -Condition, -Animal.Number) # Remove metadata
 outcome.time <- as.factor(ASV.table.wide.stress.time$Condition)
-
 
 # The parameter I'll  tune for the random forest model is mtry, the number of features sampled 
 # at each node of the decision tree. For this random forest, I'll use ntree (the number of trees in 
@@ -347,7 +315,7 @@ model.rf.stress.time.final <- randomForest(x = predictors.time, y = outcome.time
 model.rf.stress.time.final
 
 
-roc(outcome.time, model.rf.stress.time.final$votes[,1], plot = TRUE, legacy.axes = TRUE, percent = TRUE, main = "Training Set ROC Curve",
+roc(outcome.time, model.rf.stress.time.final$votes[,1], plot = TRUE, legacy.axes = TRUE, percent = TRUE, main = "ROC Curve",
     xlab = "False Positive Percentage", ylab = "True Positive Percentage", col = "#377eb8", lwd = 4, print.auc = TRUE)
 
 # The RF model performs pretty well on training data, but not as well as previous models. It has 
@@ -434,11 +402,11 @@ ggplot(RF.ranking.stress.time.figure, aes(x = Pre.vs.Post.Mean.Decrease.Gini, y 
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 
-ggsave("./results/figures/stress/RF Rankings_Stress_Pre_vs_Stress_Post.png", width = 7, height = 5)
+#ggsave("./results/figures/stress/RF Rankings_Stress_Pre_vs_Stress_Post.png", width = 7, height = 5)
 
 
 # Print Random Forest importance rankings
-write.csv(RF.ranking.stress.time, file = "./results/tables/stress/RF Rankings_Stress_Pre_vs_Stress_Post.csv", row.names = FALSE)
+#write.csv(RF.ranking.stress.time, file = "./results/tables/stress/RF Rankings_Stress_Pre_vs_Stress_Post.csv", row.names = FALSE)
 
 
 
@@ -479,4 +447,4 @@ View(RF.ranking.stress.all.important)
 # previous reports.
 
 # I'll now print these importance rankings.
-write.csv(RF.ranking.stress.all.important, file = "./results/tables/stress/RF Rankings_Stress and Mucin Experiment ASVs.csv")
+#write.csv(RF.ranking.stress.all.important, file = "./results/tables/stress/RF Rankings_Stress and Mucin Experiment ASVs.csv")

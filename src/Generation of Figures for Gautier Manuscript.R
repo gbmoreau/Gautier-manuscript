@@ -157,7 +157,6 @@ ordplot <- plot_ordination(ps.mucin.analysis, ord.nmds.bray, color = "Group") +
                      breaks = c("Baseline", "3 Wk Stress"), 
                      labels = c("Baseline", "3 Wk Stress"))
 
-
 ordplot
 
 #ggsave("./results/figures/manuscript/beta-diversity-bc.png", width = 4, height = 3)
@@ -170,7 +169,8 @@ ordplot +
   theme(axis.text = element_text(size = 10), 
         axis.title = element_text(size = 15),
         legend.text = element_text(size = 10),
-        legend.title = element_text(size = 12)) 
+        legend.title = element_text(size = 12))  +
+  coord_fixed()
 
 #ggsave("./results/figures/manuscript/beta-diversity-bc-ellipses.png", width = 4, height = 3)
 
@@ -355,6 +355,9 @@ summarized.abundance.family.sample.table$Family <- factor(summarized.abundance.f
                                                                                                                       "Lachnospiraceae", "Lactobacillaceae", "Muribaculaceae", "Oscillospiraceae", "Peptostreptococcaceae", 
                                                                                                                       "Ruminococcaceae", "Family < 1%"))
 
+summarized.abundance.family.sample.table$Group <- factor(summarized.abundance.family.sample.table$Group, 
+                                                        levels = c("3 Wk Stress", "Baseline"), ordered = TRUE)
+
 ggplot(summarized.abundance.family.sample.table, aes(x = Relative.Abundance, y = Family, color = Group)) +
   geom_boxplot() +
   theme_bw() +
@@ -366,9 +369,10 @@ ggplot(summarized.abundance.family.sample.table, aes(x = Relative.Abundance, y =
                      breaks = c("Baseline", "3 Wk Stress"), 
                      labels = c("Baseline", "3 Wk Stress"))
 
-
 #ggsave("./results/figures/manuscript/family abundance-boxplot.png", width = 6, height = 6)
 
+summarized.abundance.family.sample.table$Group <- factor(summarized.abundance.family.sample.table$Group, 
+                                                         levels = c("Baseline", "3 Wk Stress"))
 
 
 ### SIGNIFICANT DIFFERENCES: HIGHER VS LOWER GA AT FIRST TIMEPOINT ###

@@ -73,7 +73,14 @@ ps.mucin.analysis <- prune_taxa(taxa_sums(ps.mucin.analysis) > 0, ps.mucin.analy
 dim(ps.mucin.analysis@otu_table) # Overall, there are 48 samples with metadata that will be examined in this analysis. From 
 # these 48 samples there were 430 unique ASVs.
 
-View(ps.mucin.analysis@tax_table)
+total.reads <- sample_sums(ps.mucin.analysis)
+
+sum(total.reads) # There are a total of 3,193,581 reads across the 48 samples in the data set.
+mean(total.reads) # The average read number is 66,532
+median(total.reads) # The median read number is 65,425
+range(total.reads) # The range of reads in samples is from 46,944-95,894 total reads.
+
+
 
 
 #### ALPHA DIVERSITY METRICS ######################################################################
@@ -488,7 +495,7 @@ ASV.table.summary.stress <- ASV.table.stress %>%
   summarize(Abundance.per.Group = (sum(Abundance))) %>%
   filter(any(Abundance.per.Group > 0)) # Removes any ASVs with an abundance of 0 in both groups.
 
-length(unique(ASV.table.summary.stress$OTU)) # There are a total of 516 unique ASVs in these samples.
+length(unique(ASV.table.summary.stress$OTU)) # There are a total of 430 unique ASVs in these samples.
 
 
 # Now I'll collect the ASV names for these ASVs. These will be used to merge only the ASV Abundance
@@ -498,7 +505,7 @@ unique.ASVs.stress <- plyr::rename(unique.ASVs.stress, replace = c("unique(ASV.t
 
 ASV.table.samples.stress <- left_join(unique.ASVs.stress, ASV.table.stress, by = "OTU")
 
-length(unique(ASV.table.samples.stress$OTU)) # 516 unique ASVs as expected.
+length(unique(ASV.table.samples.stress$OTU)) # 430 unique ASVs as expected.
 
 
 # I'll reshape the data into a wide format for analysis.
@@ -733,6 +740,228 @@ ggplot(RF.ranking.stress.figure, aes(x = Stress.Mean.Decrease.Gini, y = ASV.Fami
   guides(color = guide_legend(nrow = 2))
 
 #ggsave("./results/figures/manuscript/RF Rankings-Baseline vs Stress.png", width = 3, height = 4)
+
+
+
+
+#### RANDOM FOREST PLOT OF FAMILIES ##############################################################
+# PURPOSE: Make figure of Random Forest Importance, this time at the Family level rather than the
+# ASV level.
+
+ps.mucin.analysis.prop <-transform_sample_counts(ps.mucin.analysis, function(ASV) ASV/sum(ASV))
+
+ps.mucin.analysis.prop.family <- tax_glom(ps.mucin.analysis.prop, "Family", NArm = FALSE)
+family.table <- psmelt(ps.mucin.analysis.prop.family) # Organize in long format for ggplot.
+
+# I'll reshape the data into a wide format for analysis.
+family.table.wide <- select(family.table, Family, Sample, Abundance, Group, Animal.Number)
+family.table.wide <- spread(family.table.wide, key = Family, value = Abundance)
+
+
+# Now I'll split the data into Baseline and 3 Week Stress groups
+family.table.wide.Baseline <- filter(family.table.wide, Group == "Baseline")
+family.table.wide.Baseline$Group <- factor(ASV.table.wide.Baseline$Group, levels = c("Baseline"))
+
+family.table.wide.3Wk.Stress <- filter(family.table.wide, Group == "3 Wk Stress")
+family.table.wide.3Wk.Stress$Group <- factor(family.table.wide.3Wk.Stress$Group, levels = c("3 Wk Stress"))
+
+
+
+
+### TRAINING AND TEST SET GENERATION: STRESS TREATMENT ###############################################
+# There are 24 mice per group, which is a pretty good sample size for mouse experiments. Because of 
+# this, I'll separate the data into training and test sets to better optimize the random forest 
+# model and check model performance in an outside population.
+
+
+# Set seed for reproducibility
+#sample(1:1000, 1) # It selected 763
+set.seed(763) 
+
+# Now I'll separate each group into training and test sets.
+
+### BASELINE ###
+testIndex.Baseline <- createDataPartition(family.table.wide.Baseline$Group,
+                                          p = 0.30,
+                                          list = FALSE,
+                                          times = 1)
+
+featureTest.Baseline <- family.table.wide.Baseline[testIndex.Baseline,]
+featureTrain.Baseline  <- family.table.wide.Baseline[-testIndex.Baseline,]
+
+
+### 3 WEEK STRESS ###
+testIndex.3Wk.Stress <- createDataPartition(family.table.wide.3Wk.Stress$Group,
+                                            p = 0.30,
+                                            list = FALSE,
+                                            times = 1)
+
+featureTest.3Wk.Stress <- family.table.wide.3Wk.Stress[testIndex.3Wk.Stress,]
+featureTrain.3Wk.Stress  <- family.table.wide.3Wk.Stress[-testIndex.3Wk.Stress,]
+
+
+
+# Finally, I'll combine each training and test partition together to make a complete training and 
+# test set.
+
+training.set.stress <- rbind(featureTrain.Baseline, featureTrain.3Wk.Stress) # Combine training sets together
+test.set.stress <- rbind(featureTest.Baseline, featureTest.3Wk.Stress) # Combine test sets together
+
+
+# Predictors
+predictors.stress.Train <- select(training.set.stress, -Sample, -Group, -Animal.Number) # Remove metadata
+predictors.stress.Test <- select(test.set.stress, -Sample, -Group, -Animal.Number) # Remove metadata
+
+# Outcomes
+outcome.stress.Train <- as.factor(training.set.stress$Group)
+outcome.stress.Test <- as.factor(test.set.stress$Group)
+
+
+
+
+#### CONSTRUCTING THE RANDOM FOREST MODEL ###########################################################
+# The parameter I'm going to tune for the random forest model is mtry, the number of features sampled 
+# at each node of the decision tree. For this random forest, I'll use ntree (the number of trees in 
+# the forest) = 1000, which is a pretty large number but not too computationally taxing. Then I'll 
+# look at a variety of different mtry values to see which minimizes the Out-of-Bag error rate.
+
+# By default mtry is set to the square root of the number of features. There are 33 features in 
+# this data set, meaning mtry be default is set to 5.7. I'll test mtry values around 6 to see if 
+# this improves model error.
+
+
+### TUNING MTRY ###
+model.rf.mtry4 <- randomForest(x = predictors.stress.Train, y = outcome.stress.Train, ntree = 1000, mtry = 4)
+model.rf.mtry4 # The OOB error rate is 3.12%
+
+model.rf.mtry5 <- randomForest(x = predictors.stress.Train, y = outcome.stress.Train, ntree = 1000, mtry = 5)
+model.rf.mtry5 # The OOB error rate is 3.12%
+
+model.rf.mtry6 <- randomForest(x = predictors.stress.Train, y = outcome.stress.Train, ntree = 1000, mtry = 6)
+model.rf.mtry6 # The OOB error rate is 3.12%
+
+model.rf.mtry7 <- randomForest(x = predictors.stress.Train, y = outcome.stress.Train, ntree = 1000, mtry = 7)
+model.rf.mtry7 # The OOB error rate is 3.12%
+
+model.rf.mtry8 <- randomForest(x = predictors.stress.Train, y = outcome.stress.Train, ntree = 1000, mtry = 8)
+model.rf.mtry8 # The OOB error rate is 03.12
+
+# All random forest models performed very well at correctly classifying Baseline and 3 week stress 
+# samples, regardless of mtry value. Because of this, I'll just go with the standard mtry value
+# of 6.
+
+model.rf.stress.final <- randomForest(x = predictors.stress.Train, y = outcome.stress.Train, ntree = 1000, mtry = 6)
+model.rf.stress.final
+
+
+
+
+#### TESTING THE RANDOM FOREST MODEL ################################################################
+# I now want to test the model on the test set data to see how well it can predict a data set it 
+# hasn't seen before. 
+
+pred <- predict(model.rf.stress.final, newdata = predictors.stress.Test)
+
+prediction.stress.test <- select(test.set.stress, Sample, Group)
+prediction.stress.test <- cbind(prediction.stress.test, pred)
+prediction.stress.test <- plyr::rename(prediction.stress.test, replace = c("Group" = "Actual", 
+                                                                           "pred" = "Predicted"))
+
+View(prediction.stress.test)
+
+# Overall, 8/8 (100%) of Baseline samples were correctly classified, while 6/8 (75%)  of 3 week
+# stress samples were correctly classified. This suggests that the model is not really overfit
+# and performs well on data it has not been trained on.
+
+# I'll now generate ROC curves for both training and test sets to summarize model performance.
+
+### TRAINING SET ###
+roc(outcome.stress.Train, model.rf.stress.final$votes[,1], plot = TRUE, legacy.axes = TRUE, percent = TRUE, main = "Training Set ROC Curve",
+    xlab = "False Positive Percentage", ylab = "True Positive Percentage", col = "#377eb8", lwd = 4, print.auc = TRUE)
+
+# The RF model performs very well on the training set, with a 99.6% AUC. This is expected from
+# the performance of the model on the training set data.
+
+
+### TEST SET ###
+pred.prob.stress <- predict(model.rf.stress.final, newdata = predictors.stress.Test, type = "prob") # Re-run prediction 
+# looking at probabilities instead of classification.
+
+pred.stress.data.frame <- as.data.frame(pred.prob.stress)
+roc(outcome.stress.Test, pred.stress.data.frame$`3 Wk Stress`, plot = TRUE, legacy.axes = TRUE, percent = TRUE, main = "Test Set ROC Curve",
+    xlab = "False Positive Percentage", ylab = "True Positive Percentage", col = "#377eb8", lwd = 4, print.auc = TRUE)
+
+# The RF model for the test set performs perfectly with a 100% AUC value.
+
+
+
+
+#### IMPORTANCE VALUES FROM RANDOM FOREST MODEL ####################################################
+# Now that I've generated the model, I'll look at which features best discriminate between groups as
+# selected by the model. I'll do this by checking the importance values from the Random Forest model, 
+# using Gini index as the measure of importance.
+
+importance.rf.stress <- importance(model.rf.stress.final, type = 2)
+
+# Format the importance data as a data frame
+importance.rf.stress <- cbind(Family = rownames(importance.rf.stress), importance.rf.stress)
+rownames(importance.rf.stress) <- NULL
+importance.rf.stress <- as.data.frame(importance.rf.stress)
+importance.rf.stress$MeanDecreaseGini <- as.numeric(importance.rf.stress$MeanDecreaseGini)
+str(importance.rf.stress$MeanDecreaseGini)
+
+# This is the table of ASVs listed by mean decrease in Gini Index. I'll rank the features according
+# to Gini index to make the data easier to interpret.
+
+RF.ranking.stress <- importance.rf.stress %>%
+  arrange(desc(MeanDecreaseGini))
+
+RF.ranking.stress <- plyr::rename(RF.ranking.stress, replace = c("MeanDecreaseGini" = "Stress.Mean.Decrease.Gini"))
+RF.ranking.stress$Stress.RF.Rank <- rank(-RF.ranking.stress$Stress.Mean.Decrease.Gini)
+
+# I also want to add whether ASVs are enriched at baseline or after 3 weeks of stress treatment.
+family.table.enrichment.stress <- family.table %>%
+  group_by(Family, Group) %>%
+  summarize(Average.Abundance.per.Group = (mean(Abundance))) %>%
+  filter(any(Average.Abundance.per.Group > 0)) # Removes any familys with an abundance of 0 in both groups.
+
+family.enrichment.baseline <- filter(family.table.enrichment.stress, Group == "Baseline")
+family.enrichment.baseline <- plyr::rename(family.enrichment.baseline, replace = c("Average.Abundance.per.Group" = "Baseline.Average.Abundance.per.Group"))
+family.enrichment.baseline <- select(family.enrichment.baseline, Family, Baseline.Average.Abundance.per.Group)
+
+family.enrichment.3Wk.stress <- filter(family.table.enrichment.stress, Group == "3 Wk Stress")
+family.enrichment.3Wk.stress <- plyr::rename(family.enrichment.3Wk.stress, replace = c("Average.Abundance.per.Group" = "3Wk.stress.Average.Abundance.per.Group"))
+family.enrichment.3Wk.stress <- select(family.enrichment.3Wk.stress, Family, '3Wk.stress.Average.Abundance.per.Group')
+
+family.enrichment.stress <- full_join(family.enrichment.baseline, family.enrichment.3Wk.stress, by = "Family")
+family.enrichment.stress$Enrichment.Stress <- NA
+family.enrichment.stress$Enrichment.Stress[family.enrichment.stress$Baseline.Average.Abundance.per.Group > family.enrichment.stress$`3Wk.stress.Average.Abundance.per.Group`] <- "Baseline"
+family.enrichment.stress$Enrichment.Stress[family.enrichment.stress$Baseline.Average.Abundance.per.Group < family.enrichment.stress$`3Wk.stress.Average.Abundance.per.Group`] <- "3 Wk Stress"
+
+family.enrichment <- select(family.enrichment.stress, Family, Enrichment.Stress)
+
+RF.ranking.stress <- full_join(RF.ranking.stress, family.enrichment, by = "Family")
+
+RF.ranking.stress$Family <- factor(RF.ranking.stress$Family, levels = RF.ranking.stress$Family)
+
+
+ggplot(RF.ranking.stress, aes(x = Stress.Mean.Decrease.Gini, y = Family, color = Enrichment.Stress)) +
+  geom_point(size = 1) +
+  labs(x = "Mean Decrease in Node Impurity (Gini)", y = NULL, color = "Enrichment") +
+  scale_color_manual(name = "Enrichment", 
+                     values = c("#941650", "#1c7798"),
+                     breaks = c("Baseline", "3 Wk Stress"), 
+                     labels = c("Baseline", "3 Wk Stress")) +
+  scale_y_discrete(limits=rev) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 5), 
+        axis.title = element_text(size = 5),
+        legend.text = element_text(size = 5),
+        legend.title = element_text(face = "bold", size = 5),
+        legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 2))
+
+#ggsave("./results/figures/manuscript/RF Rankings-Baseline vs Stress-Family.png", width = 3, height = 4)
 
 
 

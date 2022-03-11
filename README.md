@@ -1,7 +1,7 @@
 # Gautier TUMI Pilot: Microbiota Changes Associated with Stress Treatment
 
 ## Project Summary
-The following repository contains the data and code used for analysis of the intestinal microbiota in a mouse model of chronic stress. This data is based off of a pilot proposal from the University of Virginia Trans-University Microbiome Initiative and is in preparation for an upcoming manuscript. Mice (n = 24 per group) were either untreated or treated with chronic mild stress for 3 weeks. Stool samples were collected both at Baseline and after stress treatment for analysis of microbiota diversity and community composition.
+The following repository contains the data and code used for analysis of the intestinal microbiota in a mouse model of chronic stress. This data is based off of a pilot proposal from the University of Virginia Trans-University Microbiome Initiative and is in preparation for an upcoming manuscript. Mice (n = 24 per group) were treated with chronic mild stress for 3 weeks. Stool samples were collected both at baseline and after stress treatment for analysis of changes in microbiota diversity and community composition.
 
 
 

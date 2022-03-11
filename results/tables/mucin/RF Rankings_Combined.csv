@@ -1,8 +1,0 @@
-"OTU","Stress.Mean.Decrease.Gini","Mucin.Mean.Decrease.Gini","Stress.RF.Rank","Mucin.RF.Rank","Enrichment.Stress","Enrichment.Mucin","Kingdom","Phylum","Class","Order","Family","Genus","ASV.Family"
-"ASV159",0.620447772447686,0.0598786435786436,2,30,"3 Wk Stress","Stress Alone","Bacteria","Firmicutes","Clostridia","Lachnospirales","Lachnospiraceae","Lachnospiraceae UCG-001","ASV159  ( Lachnospiraceae )"
-"ASV104",0.464138316658402,0.109223015873016,5,14,"3 Wk Stress","Stress Alone","Bacteria","Firmicutes","Clostridia","Lachnospirales","Lachnospiraceae",NA,"ASV104  ( Lachnospiraceae )"
-"ASV89",0.330205374591308,0.0366580808080808,10,47,"3 Wk Stress","Stress + Mucin","Bacteria","Firmicutes","Clostridia","Lachnospirales","Lachnospiraceae","Lachnospiraceae NK4A136 group","ASV89  ( Lachnospiraceae )"
-"ASV129",0.216305328718409,0.185585425685426,18,7,"Baseline","Stress Alone","Bacteria","Firmicutes","Clostridia","Lachnospirales","Lachnospiraceae","Lachnoclostridium","ASV129  ( Lachnospiraceae )"
-"ASV49",0.19758776222749,0.23476911976912,22,5,"3 Wk Stress","Stress Alone","Bacteria","Firmicutes","Clostridia","Lachnospirales","Lachnospiraceae","Lachnospiraceae NK4A136 group","ASV49  ( Lachnospiraceae )"
-"ASV186",0.158781376427076,0.23795303030303,31,4,"Baseline","Stress + Mucin","Bacteria","Firmicutes","Clostridia","Lachnospirales","Lachnospiraceae","Tuzzerella","ASV186  ( Lachnospiraceae )"
-"ASV288",0.121790714983032,0.144450865800866,39,10,"3 Wk Stress","Stress Alone","Bacteria","Firmicutes","Clostridia","Lachnospirales","Lachnospiraceae","GCA-900066575","ASV288  ( Lachnospiraceae )"

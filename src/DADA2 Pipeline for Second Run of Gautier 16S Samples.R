@@ -1,4 +1,4 @@
-#### DADA2 Pipeline for Second Run of Gautier 16S Samples ##########################################
+#### DADA2 Pipeline for Gautier Chronic Stress 16S Samples #########################################
 # NAME: G. Brett Moreau
 # DATE: November 8, 2021
 
@@ -27,35 +27,28 @@ packageVersion("ggplot2") # I'm using version 3.3.5
 
 #### INTRODUCTION ##################################################################################
 # The Gautier TUMI pilot project is focused on investigating changes in the intestinal microbiome 
-# of mice with depressive phenotypes as well as the impact of mucin degradation on this process.
-# Samples were previously run, but the resulting fastq files had generally poor quality and resulted
-# in significant loss of reads throughout the pipeline. Other samples run around the same time also
-# had issues, so we thought this may be a Miseq issue and decided to re-run the samples on the TUMI 
-# MiSeq. The sample library was re-diluted and re-run on the TUMI MiSeq, and these .fastq files will
-# now be run through the DADA2 pipeline.
+# of mice with depressive phenotypes as well as the impact of mucin degradation on this process. A
+# portion of this work will be used for an upcoming manuscript investigating changes in the 
+# microbiota during stress. Fecal samples from Control and Stressed mice were collected and 16S 
+# rRNA sequencing was performed. The resulting FASTQ files will now be run through the DADA2 pipeline.
 
 
 
 
 #### ORGANIZING READS #####################################################################################
-# Before starting the DADA2 pipeline, I checked the .fastq files to see if the primer sequences 
-# needed to be trimmed from each file. Sequences at the beginning of each forward .fastq file
+# Before starting the DADA2 pipeline, I checked the FASTQ files to see if the primer sequences 
+# needed to be trimmed from each file. Sequences at the beginning of each forward FASTQ file
 # corresponded to the nucleotides immediately downstream of the forward primer sequence, and 
-# sequences at the beginning of each reverse .fastq read corresponded to the nucleotides immediately 
-# downstream of the reverse primer sequence. In addition, running .fastq files through cutadapt to
+# sequences at the beginning of each reverse FASTQ read corresponded to the nucleotides immediately 
+# downstream of the reverse primer sequence. In addition, running FASTQ files through cutadapt to
 # remove primer sequences resulted in no matches. Overall, these results indicate that the primer
-# sequences were removed during the sequencing pipeline and that .fastq files are ready for the 
+# sequences were removed during the sequencing pipeline and that FASTQ files are ready for the 
 # DADA2 pipeline.
 
-# In order to process the .fastq files using DADA2, I'll first set up the directory paths to find
-# the .fastq files.
+# In order to process the FASTQ files using DADA2, I'll first set up the directory paths to find
+# the FASTQ files.
 
-
-#setwd("..") # I need to set the working directory up one to the parent directory for the code to 
-# work properly. If this has been done previously during the same session then this step should be 
-# skipped, or the working directory will be moved out of the parent directory.
-
-path <- "./data/raw_reads" 
+path <- "../data/raw_reads" 
 list.files(path) # We're in the right directory
 
 # Pull forward and reverse reads
@@ -82,19 +75,18 @@ set.seed(624)
 plotQualityProfile(fnFs[1:2])
 plotQualityProfile(fnFs, aggregate = TRUE)
 
-ggsave("./results/figures/Quality_Profile_forward_reads.png", width = 5, height = 3)
-
+#ggsave("../results/figures/Quality_Profile_forward_reads.png", width = 5, height = 3)
 
 # Overall, the forward reads look ok. There is an initial drop in quality in the first 15-20 base
 # pairs. After that, quality is good untile around base pair 150, where it starts to drop below a 
 # quality score of 30. I'll trim the first 15 base pairs, then trim at base pair 160.
 
+
 ### REVERSE READ PROFILES ### 
 plotQualityProfile(fnRs[1:2])
 plotQualityProfile(fnRs, aggregate = TRUE)
 
-ggsave("./results/figures/Quality_Profile_reverse_reads.png", width = 5, height = 3)
-
+#ggsave("../results/figures/Quality_Profile_reverse_reads.png", width = 5, height = 3)
 
 # The reverse reads are pretty rough, even for reverse reads. The reads average pretty high quality
 # for the first 150bp with some dips in quality, but at 150bp they quickly crater. I'll trim the 
@@ -105,8 +97,8 @@ ggsave("./results/figures/Quality_Profile_reverse_reads.png", width = 5, height 
 
 #### FILTER AND TRIM READS ########################################################################
 # Place filtered files in filtered subdirectory
-filtFs <- file.path("./data/filtered_reads", paste0(sample.names, "_F_filt.fastq.gz"))
-filtRs <- file.path("./data/filtered_reads", paste0(sample.names, "_R_filt.fastq.gz"))
+filtFs <- file.path("../data/filtered_reads", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path("../data/filtered_reads", paste0(sample.names, "_R_filt.fastq.gz"))
 
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
                      truncLen = c(160,150),
@@ -146,10 +138,10 @@ errF <- learnErrors(derepFs, multithread = TRUE)
 errR <- learnErrors(derepRs, multithread = TRUE)
 
 plotErrors(errF, nominalQ = TRUE)
-ggsave("./results/figures/Error_Rates_forward_reads.png", width = 4, height = 4)
+#ggsave("../results/figures/Error_Rates_forward_reads.png", width = 4, height = 4)
 
 plotErrors(errR, nominalQ = TRUE)
-ggsave("./results/figures/Error_Rates_reverse_reads.png", width = 4, height = 4)
+#ggsave("../results/figures/Error_Rates_reverse_reads.png", width = 4, height = 4)
 
 # Looking at the error rates, which are outlined in black, they largely follow the dots of the actual
 # data, indicating that they are accurate. In addition, they show the same trends as expected for each
@@ -160,11 +152,12 @@ ggsave("./results/figures/Error_Rates_reverse_reads.png", width = 4, height = 4)
 
 
 #### INFER SAMPLE COMPOSITION ################################################################################
-# The DADA2 sample inference algorithm will now be applied to the filtered,trimmed, and dereplicated reads.
+# The DADA2 sample inference algorithm will now be applied to the filtered, trimmed, and dereplicated reads.
 # This will count the number of unique sequence variants in each sample.
 
 dadaFs <- dada(derepFs, err = errF, multithread = TRUE)
 dadaRs <- dada(derepRs, err = errR, multithread = TRUE)
+
 
 
 
@@ -196,8 +189,7 @@ plot(table(nchar(getSequences(seqtab))), xlab = "read length", ylab="number of r
 
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% seq(227,229)]
 table(nchar(getSequences(seqtab2))) 
-plot(table(nchar(getSequences(seqtab2))), xlab = "read length", ylab="number of reads") # Now all 
-# sequences in the data set are 215 base pairs in length.
+plot(table(nchar(getSequences(seqtab2))), xlab = "read length", ylab="number of reads") 
 
 
 
@@ -237,17 +229,18 @@ track <- plyr::rename(track, replace = c("input" = "Input",
                                          "filtered" = "Filtered",
                                          "denoisedF" = "DenoisedF",
                                          "denoisedR" = "DenoisedR",
+                                         "merged" = "Merged",
                                          "nonchim" = "Non-Chimera"))
 
-track$Percent.Input <- track$`Non-Chimera`/track$Input * 100
+track$'Percent Input (%)' <- track$`Non-Chimera`/track$Input * 100
 
 # I'll print the table of tracked reads for future reference.
-write.csv(track, file = "./results/tables/tracked read counts.csv")
+#write.csv(track, file = "../results/tables/tracked read counts.csv")
 
 
 
 
-#### ASSIGN TAXONOMY ##############################################################################
+#### ASSIGN TAXONOMY ################################################################################
 # Now I'll assign taxonomy to the ASV table using an assignment file from the Silva reference 
 # database. For this project I'll use version 138.1 for both genus and species assignment.
 
@@ -256,8 +249,8 @@ write.csv(track, file = "./results/tables/tracked read counts.csv")
 # to be classified and a training set of reference sequences with known taxonomy, and outputs taxonomic 
 # assignments with at least minBoot bootstrap confidence.
 
-taxa <- assignTaxonomy(seqtab.nochim, "./data/silva_nr99_v138.1_train_set.fa.gz", multithread = TRUE)
-taxa <- addSpecies(taxa, "./data/silva_species_assignment_v138.1.fa.gz") # Instructions for obtaining 
+taxa <- assignTaxonomy(seqtab.nochim, "../data/silva_nr99_v138.1_train_set.fa.gz", multithread = TRUE)
+taxa <- addSpecies(taxa, "../data/silva_species_assignment_v138.1.fa.gz") # Instructions for obtaining 
 # these reference database files are available on the DADA2 pipeline website.
 
 taxa.print <- taxa # Removing sequence rownames for display only
@@ -271,18 +264,16 @@ head(taxa.print)
 
 
 
-#### HAND OFF THE PHYLOSEQ ########################################################################
+#### HAND OFF THE PHYLOSEQ ##########################################################################
 # I'll now be transferring the analysis from the DADA2 package to the Phyloseq package. This will 
 # allow us to construct a phyloseq object that contains all of the DADA2 pipeline information as 
 # well as metadata.
 
 # In order to assemble the phyloseq object, I'll need to import sample metadata and merge it with
-# taxanomic and ASV data. I noticed that the dates present in the sample names are slightly 
-# different between the first MiSeq run (20210611) and the second MiSeq run (20210603), so I will
-# change the sample names in the metadata to ensure they are identical to those in the current
-# samples.
+# taxanomic and ASV data. For the manuscript, I'm only interested in a subset (n = 48) of the 
+# data set, so I will only included metadata for these samples.
 
-metadata <- read.csv("./data/metadata.csv") # This includes the metadata for the samples such as
+metadata <- read.csv("../data/metadata.csv") # This includes the metadata for the samples such as
 # experiment name and condition.
 
 # Format to correct sample names
@@ -317,7 +308,78 @@ taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
 # The Phyloseq object is now ready for use. I'll save this R object for subsequent use in the 
 # analysis pipeline.
 
-save.image(file = "./results/DADA2 Environment.RData")
+save.image(file = "../results/DADA2 Environment.RData")
 
 
 
+
+### ORGANIZATION OF THE PHYLOSEQ OBJECT FOR ANALYSIS #################################################
+# Before I start analysis of the data set, I want to organize the phyloseq object to include only the
+# samples that will be analyzed for the manuscript: these include baseline measurements before stress
+# treatment and measurements after three weeks of chronic mild stress. I'll first organize the data
+# into groups, then remove the data that doesn't fit into these groups.
+
+ps.analysis <- ps
+
+# Organize into Baseline and 3 Week Stress Groups
+ps.analysis@sam_data$Group <- NA
+ps.analysis@sam_data$Group[ps.analysis@sam_data$Condition == "Control Pre" | ps.analysis@sam_data$Condition == "Mucin Pre"] <- "Baseline"
+ps.analysis@sam_data$Group[ps.analysis@sam_data$Condition == "Control 3wk" | ps.analysis@sam_data$Condition == "Mucin 3wk "] <- "3 Wk Stress"
+ps.analysis@sam_data$Group <- factor(ps.analysis@sam_data$Group, 
+                                  levels = c("Baseline", "3 Wk Stress"))
+
+
+# Prune samples that aren't in either group.
+ps.analysis <- subset_samples(ps.analysis, Group == "Baseline" | Group == "3 Wk Stress")
+table(ps.analysis@sam_data$Group) # There are 24 samples in each group.
+
+# I'll now look at the tracked reads to see if any samples have too few reads and need to be excluded
+# from the analysis.
+
+# Limit tracked changes to only remaining samples.
+IDs <- rownames(ps.analysis@sam_data)
+IDs <- as.data.frame(IDs)
+track$IDs <- rownames(track)
+rownames(track) <- NULL
+track.metadata <- left_join(IDs, track, by = "IDs")
+
+View(track.metadata)
+
+# Overall, the samples for this study are pretty similar. The number of reads at the end of the 
+# pipeline ranged from 48880-101514 and the percentage kept through the pipeline ranged from 57-86%.
+# All samples have a reasonable number of reads, so I'll keep all samples in the data set.
+
+# There are several schools of thought on how to deal with differences in read count between samples, 
+# mostly focusing around whether samples should be rarefied/subsampled. This normalizes read count 
+# based on the sample with the lowest number of reads, however several publications have come out 
+# suggesting that this does more harm than good. Therefore, I'll move ahead without subsampling.
+
+
+
+
+#### CHARACTERISTICS OF THE DATA SET ################################################################
+# I'll now finalize the data set and perform a basic overview of the data set.
+
+# Keep only Bacterial reads. Remove Mitochondria/Chloroplast read and taxa with 0 reads in these samples.
+ps.analysis <- subset_taxa(ps.analysis, Kingdom == "Bacteria" & Family != "Mitochondria" & Family != "Chloroplast")
+ps.analysis <- prune_taxa(taxa_sums(ps.analysis) > 0, ps.analysis)
+
+dim(ps.analysis@otu_table) # Overall, there are 48 samples with metadata that will be examined in 
+# this analysis. From these 48 samples there were 430 unique ASVs.
+
+total.reads <- sample_sums(ps.analysis)
+
+sum(total.reads) # There are a total of 3,193,601 reads across the 48 samples in the data set.
+mean(total.reads) # The average read number is 66,533
+median(total.reads) # The median read number is 65,425
+range(total.reads) # The range of reads in samples is from 46,944-95,894 total reads.
+
+
+# Finally, I'll save the R environment from this session for easy access in the future.
+
+# Total environment
+save.image(file = "../results/DADA2 Environment.RData")
+
+# Phyloseq objects and taxa table only
+rm(list = ls()[!ls() %in% c("ps.analysis", "seqtab.nochim")])
+save.image(file = "../results/phyloseq object for analysis.RData")

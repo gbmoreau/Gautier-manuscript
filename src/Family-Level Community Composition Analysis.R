@@ -34,9 +34,9 @@ packageVersion("pROC") # I'm using version 1.18.0
 
 
 #### INTRODUCTION #################################################################################
-# This code will outline the analysis of alpha and beta diversity for the 16S samples for the 
-# Gautier manuscript.These include richness and evenness as alpha diversity measures and Bray-
-# Curtis Dissimilarity for beta diversity.
+# This code will outline the analysis of community composition for the 16S samples for the Gautier 
+# manuscript. I'll focus on family-level composition differences in this analysis, along with a 
+# random forest model with individual ASVs.
 
 # Load the data
 load(file = "../results/phyloseq object for analysis.RData")
@@ -188,7 +188,7 @@ ggplot(summarized.abundance.family.sample.table.figure, aes(x = Animal.Number, y
   labs(x = NULL, y = "Relative Abundance (%)") +
   theme(axis.text.x = element_text(angle = 90))
 
-#ggsave("../results/figures/per sample community composition.png", width = 6, height = 4)
+#ggsave("../results/figures/per sample community composition-family.png", width = 6, height = 4)
 
 # Plot with no Animal number labels.
 ggplot(summarized.abundance.family.sample.table.figure, aes(x = Animal.Number, y = Relative.Abundance.Percentage, fill = Family)) +
@@ -203,7 +203,7 @@ ggplot(summarized.abundance.family.sample.table.figure, aes(x = Animal.Number, y
   theme(axis.text.x = element_blank()) +
   theme(axis.ticks.x = element_blank())
 
-#ggsave("../results/figures/per sample community composition-no names.png", width = 6, height = 4)
+#ggsave("../results/figures/per sample community composition-family-no names.png", width = 6, height = 4)
 
 
 # I'll now plot abundance for each sample. Abundances are expressed as a percentage of each sample, so I'll format the 
@@ -313,8 +313,6 @@ wilcox.test.rumin <- wilcox.test(wilcox.rumin.baseline$Relative.Abundance,
                                  wilcox.rumin.stress$Relative.Abundance)$p.value
 
 
-
-
 Wilcox.Families <- c("[Eubacterium] coprostanoligenes group", "Acholeplasmataceae", "Clostridiaceae", "Erysipelotrichaceae",
                      "Lachnospiraceae", "Lactobacillaceae", "Muribaculaceae", "Oscillospiraceae", "Peptostreptococcaceae", 
                      "Ruminococcaceae")
@@ -334,6 +332,8 @@ Wilcox.all <- plyr::rename(Wilcox.all, replace = c("Wilcox.Families" = "Family",
                                                    "Wilcox.pvalues.Bonferonni" = "Bonferroni-adjusted p value"))
 
 #write.csv(Wilcox.all, file = "../results/tables/wilcoxon rank comparison-family composition.csv", row.names = FALSE)
+
+
 
 
 #### RANDOM FOREST PLOT OF ASVs ##################################################################
@@ -760,8 +760,8 @@ importance.rf.stress <- as.data.frame(importance.rf.stress)
 importance.rf.stress$MeanDecreaseGini <- as.numeric(importance.rf.stress$MeanDecreaseGini)
 str(importance.rf.stress$MeanDecreaseGini)
 
-# This is the table of ASVs listed by mean decrease in Gini Index. I'll rank the features according
-# to Gini index to make the data easier to interpret.
+# This is the table of familiess listed by mean decrease in Gini Index. I'll rank the features 
+# according to Gini index to make the data easier to interpret.
 
 RF.ranking.stress <- importance.rf.stress %>%
   arrange(desc(MeanDecreaseGini))
@@ -769,7 +769,7 @@ RF.ranking.stress <- importance.rf.stress %>%
 RF.ranking.stress <- plyr::rename(RF.ranking.stress, replace = c("MeanDecreaseGini" = "Stress.Mean.Decrease.Gini"))
 RF.ranking.stress$Stress.RF.Rank <- rank(-RF.ranking.stress$Stress.Mean.Decrease.Gini)
 
-# I also want to add whether ASVs are enriched at baseline or after 3 weeks of stress treatment.
+# I also want to add whether families are enriched at baseline or after 3 weeks of stress treatment.
 family.table.enrichment.stress <- family.table %>%
   group_by(Family, Group) %>%
   summarize(Average.Abundance.per.Group = (mean(Abundance))) %>%

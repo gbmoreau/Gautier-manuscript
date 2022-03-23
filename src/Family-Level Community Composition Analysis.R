@@ -233,7 +233,9 @@ summarized.abundance.family.sample.table$Group <- factor(summarized.abundance.fa
                                                          levels = c("Baseline", "3 Wk Stress"))
 
 
-### SIGNIFICANT DIFFERENCES: HIGHER VS LOWER GA AT FIRST TIMEPOINT ###
+
+
+#### SIGNIFICANT DIFFERENCES: CONTROL VS STRESSED SAMPLES ##########################################
 # I'll now use a Wilcoxon rank test to look for significant differences between each of these Family groups. First, I'll 
 # filter the per-sample table for only abundant Families. I'll then perform a Wilcoxon rank test and Bonferroni correction
 # for multiple comparisons on each Family to identify significant differences.

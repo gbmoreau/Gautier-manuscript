@@ -230,7 +230,9 @@ summarized.abundance.order.sample.table$Group <- factor(summarized.abundance.ord
                                                          levels = c("Baseline", "3 Wk Stress"))
 
 
-#### SIGNIFICANT DIFFERENCES: HIGHER VS LOWER GA AT FIRST TIMEPOINT ###############################
+
+
+#### SIGNIFICANT DIFFERENCES: CONTROL VS STRESSED SAMPLES ##########################################
 # I'll now use a Wilcoxon rank test to look for significant differences between each of these order 
 # groups. First, I'll filter the per-sample table for only abundant orders. I'll then perform a 
 # Wilcoxon rank test and Bonferroni correction for multiple comparisons on each Order to identify 

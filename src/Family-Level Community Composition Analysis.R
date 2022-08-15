@@ -51,7 +51,7 @@ ps.analysis.prop <-transform_sample_counts(ps.analysis, function(ASV) ASV/sum(AS
 ps.analysis.prop.family <- tax_glom(ps.analysis.prop, "Family", NArm = FALSE)
 family.table <- psmelt(ps.analysis.prop.family) # Organize in long format for ggplot.
 
-# Summarize Familiess for each Group
+# Summarize Families for each Group
 summarized.abundance.family <- family.table %>%
   group_by(Family, Group) %>%
   summarize(Relative.Abundance = (sum(Abundance) / 24))

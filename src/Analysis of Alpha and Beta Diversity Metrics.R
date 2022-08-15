@@ -26,7 +26,7 @@ packageVersion("microbiome") # I'm using version 1.16.0
 
 #install.packages("vegan")
 library(vegan)
-packageVersion("vegan") # I'm using version 2.5.7
+packageVersion("vegan") # I'm using version 2.6.2
 
 
 #### INTRODUCTION #################################################################################
@@ -139,7 +139,7 @@ ordplot +
 #ggsave("../results/figures/beta-diversity-bc-ellipses.png", width = 4, height = 3)
 
 # Stats
-adonis(distance(ps.analysis, method = "bray") ~sample_data(ps.analysis)$Group)
+adonis2(distance(ps.analysis, method = "bray") ~sample_data(ps.analysis)$Group)
 
 # There is a significant difference between groups by PERMANOVA (p = 0.001)
 

@@ -27,8 +27,8 @@ packageVersion("ggplot2") # I'm using version 3.3.5
 
 #### INTRODUCTION ##################################################################################
 # The Gautier TUMI pilot project is focused on investigating changes in the intestinal microbiome 
-# of mice with depressive phenotypes as well as the impact of mucin degradation on this process. A
-# portion of this work will be used for an upcoming manuscript investigating changes in the 
+# of mice with depressive phenotypes as well as the impact of mucin degradation on this process. 16S 
+# rRNA sequencing data from this work will be used for a manuscript investigating changes in the 
 # microbiota during stress. Fecal samples from Control and Stressed mice were collected and 16S 
 # rRNA sequencing was performed. The resulting FASTQ files will now be run through the DADA2 pipeline.
 
@@ -60,7 +60,7 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 
 
 #### READ QUALITY PROFILES #########################################################################
-# The first step of the process is the check the quality read profiles for forward and reverse 
+# The first step of the process is to check the quality read profiles for forward and reverse 
 # reads. I'll look at these profiles in aggregate and use these profiles to determine where reads 
 # need to be trimmed.
 
@@ -78,7 +78,7 @@ plotQualityProfile(fnFs, aggregate = TRUE)
 #ggsave("../results/figures/Quality_Profile_forward_reads.png", width = 5, height = 3)
 
 # Overall, the forward reads look ok. There is an initial drop in quality in the first 15-20 base
-# pairs. After that, quality is good untile around base pair 150, where it starts to drop below a 
+# pairs. After that, quality is good until around base pair 150, where it starts to drop below a 
 # quality score of 30. I'll trim the first 15 base pairs, then trim at base pair 160.
 
 
@@ -130,9 +130,9 @@ names(derepRs) <- sample.names
 
 
 
-#### LEARN ERROR RATES #######################################################################################
-# DADA2 uses a parametric model to estimate error rates for the sequence reads. These error rates are used
-# downstream for sample inference.
+#### LEARN ERROR RATES ##############################################################################
+# DADA2 uses a parametric model to estimate error rates for the sequence reads. These error rates 
+# are used downstream for sample inference.
 
 errF <- learnErrors(derepFs, multithread = TRUE)
 errR <- learnErrors(derepRs, multithread = TRUE)
@@ -151,9 +151,9 @@ plotErrors(errR, nominalQ = TRUE)
 
 
 
-#### INFER SAMPLE COMPOSITION ################################################################################
-# The DADA2 sample inference algorithm will now be applied to the filtered, trimmed, and dereplicated reads.
-# This will count the number of unique sequence variants in each sample.
+#### INFER SAMPLE COMPOSITION ########################################################################
+# The DADA2 sample inference algorithm will now be applied to the filtered, trimmed, and dereplicated 
+# reads. This will count the number of unique sequence variants in each sample.
 
 dadaFs <- dada(derepFs, err = errF, multithread = TRUE)
 dadaRs <- dada(derepRs, err = errR, multithread = TRUE)
@@ -161,10 +161,10 @@ dadaRs <- dada(derepRs, err = errR, multithread = TRUE)
 
 
 
-#### MERGE PAIRED READS #####################################################################################
-# Now I'll merge forward and reverse reads together to generate full sequences. By default, DADA2 requires
-# that forward and reverse reads overlap by at least 12 base pairs, and there must be no mismatches along
-# these base pairs. I'll keep these parameters.
+#### MERGE PAIRED READS ##############################################################################
+# Now I'll merge forward and reverse reads together to generate full sequences. By default, DADA2 
+# requires that forward and reverse reads overlap by at least 12 base pairs, and there must be no
+# mismatches along these base pairs. I'll keep these parameters.
 
 mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose = TRUE)
 
@@ -184,7 +184,7 @@ table(nchar(getSequences(seqtab)))
 plot(table(nchar(getSequences(seqtab))), xlab = "read length", ylab="number of reads") # Almost all 
 # sequences are 227-229 base pairs in length. The expected product size is ~250bp. 15bp were removed
 # from the end of the forward sequence, while 10bp were removed from the reverse sequence, giving a 
-# predicted product length of ~220bp. Based on this, I'll keep the most abundant lengths, which are
+# predicted product length of ~225bp. Based on this, I'll keep the most abundant lengths, which are
 # those between 227-229bp.
 
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% seq(227,229)]
@@ -200,9 +200,9 @@ plot(table(nchar(getSequences(seqtab2))), xlab = "read length", ylab="number of 
 
 seqtab.nochim <- removeBimeraDenovo(seqtab2, method = "consensus", multithread = TRUE, verbose = TRUE)
 
-dim(seqtab.nochim) # The original data set had 29850 total ASVs in 171 samples. After removing chimeras, 
-# the new data set includes only 1795 ASVs in 171 samples, indicating that 93.9% of all ASVs from the 
-# original data set were chimeras.
+dim(seqtab.nochim) # The original data set had 29850 total ASVs in 171 samples. After removing 
+# chimeras, the new data set includes only 1795 ASVs in 171 samples, indicating that 93.9% of all ASVs
+# from the original data set were chimeras.
 
 sum(seqtab.nochim)/sum(seqtab2) # While almost all of the original ASVs were chimeras, the chimeras
 # made up a smaller (~13%) proportion of the ASVs overall abundance.

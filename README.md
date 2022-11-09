@@ -44,6 +44,8 @@ For setup of the initial analysis, follow these intial steps:
 2. Download the reference database files for taxonomy assignment and place them in the `data` directory.
 3. Run the "DADA2 Pipeline for Second Run of Gautier 16S Samples.R" code file. This will generate the "DADA2 Environment.RData" and "phyloseq object for analysis.RData" files, which are required for downstream analysis. You are now ready to perform all subsequent analyses with this data.
 
+Most steps of the analysis pipeline performed quickly (instantaneously or <1 min) on standard hardware. Some steps of the DADA2 pipeline took slightly longer, but still performed within 10-15 minutes on standard hardware.
+
 
 ## Contact Information
 
